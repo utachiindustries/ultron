@@ -6,3 +6,12 @@ body {
   margin: 0;
   padding: 0;
 }
+html {
+  background: #fcfcfa;
+}
+html[data-theme='dark'] {
+  background: #0a0a0a;
+}
+body {
+  background: inherit;
+}

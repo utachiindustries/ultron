@@ -37,9 +37,7 @@ export default function Modal({
         alignItems: 'center',
         justifyContent: 'center',
         padding: '24px',
-        background: 'rgba(3, 3, 6, 0.55)',
-        backdropFilter: 'blur(6px)',
-        WebkitBackdropFilter: 'blur(6px)',
+        background: 'var(--c-overlay)',
       }}
     >
       <div
@@ -51,24 +49,22 @@ export default function Modal({
           maxWidth: '440px',
           maxHeight: '85vh',
           overflowY: 'auto',
-          background: 'rgba(24, 24, 32, 0.72)',
-          backdropFilter: 'blur(24px) saturate(140%)',
-          WebkitBackdropFilter: 'blur(24px) saturate(140%)',
-          border: '1px solid rgba(255,255,255,0.12)',
-          borderRadius: '20px',
-          boxShadow: '0 24px 60px rgba(0,0,0,0.5)',
+          background: 'var(--c-surface-glass)',
+          border: '1px solid var(--c-border-strong)',
+          borderRadius: 0,
+          boxShadow: '0 24px 60px var(--c-shadow-modal)',
           padding: '28px',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px' }}>
-          <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 600, color: '#f5f5f7' }}>{title}</h3>
+          <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 600, color: 'var(--c-text)' }}>{title}</h3>
           <button
             onClick={onClose}
             aria-label="Close"
             style={{
-              background: 'rgba(255,255,255,0.08)',
+              background: 'var(--c-wash)',
               border: 'none',
-              color: '#e5e7eb',
+              color: 'var(--c-text-dim)',
               width: '28px',
               height: '28px',
               borderRadius: '50%',

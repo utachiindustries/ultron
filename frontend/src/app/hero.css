@@ -5,11 +5,12 @@
 
   --ink: #ffffff;
   --ink-muted: #ededed;
-  --panel: #181818;
-  --white-btn: #fdfdfd;
-  --btn-ink: #050505;
-  --glass-fill: rgba(0, 0, 0, 0.78);
-  --glass-line: rgba(255, 255, 255, 0.09);
+  --panel: #1c1c1c;
+  --white-btn: #ffffff;
+  --btn-ink: #0a0a0a;
+  --accent: #7fb39e;
+  --glass-fill: #141414;
+  --glass-line: #333333;
 
   --dx: 8.5;
   --dy: 13.1;
@@ -38,8 +39,7 @@ html.hero-locked body {
   height: 100dvh;
   overflow: hidden;
   background: #000;
-  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-    sans-serif;
+  font-family: 'Space Grotesk', 'Segoe UI', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: geometricPrecision;
@@ -88,16 +88,7 @@ html.hero-locked body {
 .bg-fallback {
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 50% 42%, rgba(124, 92, 255, 0.35), transparent 42%),
-    repeating-radial-gradient(
-      circle at 50% 42%,
-      rgba(124, 92, 255, 0.14) 0px,
-      rgba(124, 92, 255, 0.14) 1px,
-      transparent 1px,
-      transparent 9px
-    ),
-    radial-gradient(ellipse 70% 50% at 20% 85%, rgba(60, 40, 110, 0.3), transparent 60%),
-    linear-gradient(160deg, #05050a 0%, #0a0a14 45%, #000000 100%);
+  background: #0a0a0a;
 }
 .globe-canvas {
   position: absolute;
@@ -109,7 +100,7 @@ html.hero-locked body {
 .bg-scrim {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.35) 0%, transparent 35%, rgba(0, 0, 0, 0.55) 100%);
+  background: rgba(10, 10, 10, 0.38);
 }
 
 /* ---------------------------------------------------------------- */
@@ -194,7 +185,8 @@ html.hero-locked body {
 .btn-login {
   height: calc(28 * var(--u));
   padding: 0 calc(12.9 * var(--u));
-  border-radius: calc(14 * var(--u));
+  border-radius: 0;
+  border: 1px solid var(--glass-line);
   background: var(--panel);
   color: #e8e8e8;
   font-size: calc(11.5 * var(--u));
@@ -203,7 +195,7 @@ html.hero-locked body {
   transition: background 0.18s ease, color 0.18s ease;
 }
 .btn-login:hover {
-  background: #232323;
+  background: var(--accent);
   color: #fff;
 }
 .arw {
@@ -221,8 +213,8 @@ html.hero-locked body {
   align-items: center;
   justify-content: center;
   background: var(--panel);
-  border-radius: calc(14 * var(--u));
-  border: 0;
+  border-radius: 0;
+  border: 1px solid var(--glass-line);
   cursor: pointer;
   padding: 0;
 }
@@ -231,7 +223,7 @@ html.hero-locked body {
   width: 16px;
   height: 1.5px;
   background: #ededed;
-  border-radius: 2px;
+  border-radius: 0;
   position: relative;
 }
 .burger span::before,
@@ -242,7 +234,7 @@ html.hero-locked body {
   width: 16px;
   height: 1.5px;
   background: #ededed;
-  border-radius: 2px;
+  border-radius: 0;
 }
 .burger span::before {
   top: -5px;
@@ -295,7 +287,7 @@ h1.hero-h1 {
 }
 .btn-lg {
   height: calc(39 * var(--u));
-  border-radius: calc(19.5 * var(--u));
+  border-radius: 0;
   font-size: calc(13.3 * var(--u));
   font-weight: 500;
   letter-spacing: calc(-0.3 * var(--u));
@@ -309,20 +301,19 @@ h1.hero-h1 {
   transition: background 0.18s ease, transform 0.18s ease;
 }
 .btn-primary:hover {
-  background: #fff;
+  background: var(--accent);
+  color: #fff;
 }
 .btn-ghost {
   background: var(--glass-fill);
   color: #d9d9d9;
   padding: 0 calc(17.4 * var(--u));
   border: 1px solid var(--glass-line);
-  -webkit-backdrop-filter: blur(2px);
-  backdrop-filter: blur(2px);
   transition: background 0.18s ease, border-color 0.18s ease;
 }
 .btn-ghost:hover {
-  background: rgba(0, 0, 0, 0.66);
-  border-color: rgba(255, 255, 255, 0.16);
+  background: #1c1c1c;
+  border-color: #595959;
 }
 .btn-lg .arw {
   width: calc(13 * var(--u));
@@ -351,9 +342,9 @@ h1.hero-h1 {
 
 a:focus-visible,
 button:focus-visible {
-  outline: 2px solid #a78bfa;
+  outline: 2px solid var(--accent);
   outline-offset: 3px;
-  border-radius: 99px;
+  border-radius: 0;
 }
 
 /* ---------------------------------------------------------------- */
@@ -397,7 +388,7 @@ button:focus-visible {
     display: flex;
     width: max(46px, calc(48 * var(--u)));
     height: max(38px, calc(34 * var(--u)));
-    border-radius: 999px;
+    border-radius: 0;
   }
   .hero-inner {
     max-width: calc(100vw - 48px);
@@ -412,7 +403,7 @@ button:focus-visible {
   }
   .btn-lg {
     height: max(44px, calc(39 * var(--u)));
-    border-radius: max(22px, calc(19.5 * var(--u)));
+    border-radius: 0;
     font-size: max(15px, calc(13.3 * var(--u)));
     gap: max(10px, calc(9 * var(--u)));
   }
@@ -433,14 +424,12 @@ button:focus-visible {
     top: calc(max(58px, calc(67 * var(--u))) - 6px);
     right: max(24px, calc(28 * var(--u)));
     width: min(320px, calc(100vw - 48px));
-    background: rgba(10, 10, 12, 0.86);
-    -webkit-backdrop-filter: blur(22px);
-    backdrop-filter: blur(22px);
-    border: 1px solid rgba(255, 255, 255, 0.09);
-    border-radius: 20px;
+    background: #111111;
+    border: 1px solid #333333;
+    border-radius: 0;
     padding: 10px 8px 12px;
     flex-direction: column;
-    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.3);
     transform-origin: top right;
     z-index: 5;
   }
@@ -455,16 +444,16 @@ button:focus-visible {
     font-weight: 500;
     letter-spacing: calc(-0.15 * var(--u));
     padding: 12px 14px;
-    border-radius: 12px;
+    border-radius: 0;
     transition: background 0.18s ease, color 0.18s ease;
   }
   .menu a:hover {
-    background: rgba(255, 255, 255, 0.06);
+    background: #1c1c1c;
     color: #fff;
   }
   .menu .divider {
     height: 1px;
-    background: rgba(255, 255, 255, 0.08);
+    background: #333333;
     margin: 8px 14px;
   }
   .menu .m-start {
@@ -476,12 +465,12 @@ button:focus-visible {
     color: var(--btn-ink);
     margin: 6px 8px 0;
     padding: 13px 16px;
-    border-radius: 14px;
+    border-radius: 0;
     font-weight: 600;
   }
   .menu .m-start:hover {
-    background: #fff;
-    color: var(--btn-ink);
+    background: var(--accent);
+    color: #fff;
   }
   .menu .m-start .arw {
     width: 13px;
@@ -543,7 +532,7 @@ button:focus-visible {
   }
   .btn-lg {
     height: 46px;
-    border-radius: 23px;
+    border-radius: 0;
     font-size: 15px;
     gap: 9px;
   }
@@ -645,12 +634,10 @@ html.hanim .ctas .btn {
   from {
     opacity: 0;
     transform: translateY(calc(14 * var(--u)));
-    filter: blur(4px);
   }
   to {
     opacity: 1;
     transform: none;
-    filter: blur(0);
   }
 }
 @keyframes subInFlat {

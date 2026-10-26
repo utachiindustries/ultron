@@ -1,3 +1,125 @@
+/* Console theme tokens, remapped onto the shared Utachi ink/paper system.
+   Every inline style in page.tsx/ui.tsx references these, so one
+   <html data-theme> switch repaints the whole workspace without
+   duplicating a second component tree. Light (ink-on-paper) is the
+   default surface; dark is an ink-950 panel, still square-cornered and
+   flat -- Utachi has no glow/glass "dark mode" concept. */
+:root {
+  color-scheme: light;
+  --c-font-display: 'Cormorant Garamond', Georgia, serif;
+  --c-font-body: 'Space Grotesk', 'Segoe UI', system-ui, sans-serif;
+  --c-font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  --c-bg: #fcfcfa;
+  --c-bg-translucent: rgba(252, 252, 250, 0.96);
+  --c-sidebar-bg: #ffffff;
+  --c-surface: #ffffff;
+  --c-surface-raised: #ffffff;
+  --c-surface-glass: #ffffff;
+  --c-sunken: #f5f5f5;
+  --c-wash: #f5f5f5;
+  --c-wash-strong: #ededed;
+  --c-field: #ffffff;
+  --c-field-strong: #ffffff;
+  --c-border: #d9d9d9;
+  --c-border-strong: #a6a6a6;
+  --c-border-faint: #ededed;
+  --c-text: #0a0a0a;
+  --c-text-soft: #333333;
+  --c-text-dim: #595959;
+  --c-text-faint: #8c8c8c;
+  --c-sidebar-link: #595959;
+  --c-sidebar-label: #8c8c8c;
+  --c-accent: #3d6658;
+  --c-accent-bright: #3d6658;
+  --c-accent-violet: #3d6658;
+  --c-accent-soft: #edf4f0;
+  --c-accent-border: #bfd4cb;
+  --c-accent-glow: transparent;
+  --c-on-accent: #ffffff;
+  --c-inverse-ink: #ffffff;
+  --c-danger: #b42318;
+  --c-danger-strong: #8f1b12;
+  --c-danger-solid: #b42318;
+  --c-danger-bg: #fbedec;
+  --c-danger-soft: #fbedec;
+  --c-danger-border: #e5b3ad;
+  --c-warn: #a36629;
+  --c-warn-soft: #faf2e8;
+  --c-success: #3d6658;
+  --c-success-soft: #edf4f0;
+  --c-success-border: #b9d3c3;
+  --c-success-bg: #edf4f0;
+  --c-overlay: rgba(10, 10, 10, 0.48);
+  --c-scrim: rgba(10, 10, 10, 0.3);
+  --c-shadow: rgba(10, 10, 10, 0.04);
+  --c-shadow-strong: rgba(10, 10, 10, 0.08);
+  --c-shadow-modal: rgba(10, 10, 10, 0.18);
+  --c-inset-highlight: transparent;
+  --c-scrollbar: #d9d9d9;
+  --c-scrollbar-hover: #a6a6a6;
+  --c-backdrop: rgba(10, 10, 10, 0.3);
+}
+
+html[data-theme='dark'] {
+  color-scheme: dark;
+  --c-bg: #0a0a0a;
+  --c-bg-translucent: rgba(10, 10, 10, 0.96);
+  --c-sidebar-bg: #111111;
+  --c-surface: #111111;
+  --c-surface-raised: #1c1c1c;
+  --c-surface-glass: #111111;
+  --c-sunken: #1c1c1c;
+  --c-wash: #1c1c1c;
+  --c-wash-strong: #262626;
+  --c-field: #1c1c1c;
+  --c-field-strong: #262626;
+  --c-border: #333333;
+  --c-border-strong: #595959;
+  --c-border-faint: #1c1c1c;
+  --c-text: #fcfcfa;
+  --c-text-soft: #d9d9d9;
+  --c-text-dim: #a6a6a6;
+  --c-text-faint: #8c8c8c;
+  --c-sidebar-link: #a6a6a6;
+  --c-sidebar-label: #8c8c8c;
+  --c-accent: #7fb39e;
+  --c-accent-bright: #7fb39e;
+  --c-accent-violet: #7fb39e;
+  --c-accent-soft: #1a2b25;
+  --c-accent-border: #34574b;
+  --c-accent-glow: transparent;
+  --c-on-accent: #0a0a0a;
+  --c-inverse-ink: #0a0a0a;
+  --c-danger: #e08a80;
+  --c-danger-strong: #f0b3ab;
+  --c-danger-solid: #e08a80;
+  --c-danger-bg: rgba(180, 35, 24, 0.18);
+  --c-danger-soft: rgba(180, 35, 24, 0.18);
+  --c-danger-border: #6b2a22;
+  --c-warn: #d8a35c;
+  --c-warn-soft: rgba(163, 102, 41, 0.18);
+  --c-success: #7fb39e;
+  --c-success-soft: rgba(61, 102, 88, 0.22);
+  --c-success-border: #34574b;
+  --c-success-bg: rgba(61, 102, 88, 0.22);
+  --c-overlay: rgba(0, 0, 0, 0.6);
+  --c-scrim: rgba(0, 0, 0, 0.4);
+  --c-shadow: rgba(0, 0, 0, 0.3);
+  --c-shadow-strong: rgba(0, 0, 0, 0.35);
+  --c-shadow-modal: rgba(0, 0, 0, 0.5);
+  --c-inset-highlight: transparent;
+  --c-scrollbar: #333333;
+  --c-scrollbar-hover: #595959;
+  --c-backdrop: rgba(0, 0, 0, 0.5);
+}
+
+/* Default type: Space Grotesk for UI, mono for data/labels. Pages/components
+   opt headlines into --c-font-display where they use a .ut-h*-style class. */
+.console-shell {
+  font-family: var(--c-font-body);
+}
+
 /* Console sidebar: collapsible on desktop, off-canvas drawer on mobile */
 
 .console-shell {
@@ -9,8 +131,40 @@
   display: none;
 }
 
+.console-toast-wrap {
+  position: fixed;
+  top: auto;
+  right: 1.25rem;
+  bottom: calc(1rem + env(safe-area-inset-bottom));
+  z-index: 55;
+  width: min(360px, calc(100vw - 2.5rem));
+  pointer-events: none;
+}
+.console-toast-wrap > div {
+  margin-bottom: 0 !important;
+  pointer-events: auto;
+  box-shadow: 0 1px 0 var(--c-shadow-strong);
+}
+
 .sidebar-logo-img {
   display: block;
+}
+
+/* Shown while /auth/me resolves, so no role-shaped UI paints before we know
+   which role the session actually holds. */
+.console-workspace-loader {
+  width: 30px;
+  height: 30px;
+  margin: 0 auto;
+  border-radius: 999px;
+  border: 2px solid var(--c-border-strong);
+  border-top-color: var(--c-accent-bright);
+  animation: console-spin 0.7s linear infinite;
+}
+@keyframes console-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .console-sidebar {
@@ -40,7 +194,8 @@
 .console-sidebar.collapsed .sidebar-group-label,
 .console-sidebar.collapsed .sidebar-brand-text-wrap,
 .console-sidebar.collapsed .sidebar-logo-img,
-.console-sidebar.collapsed .sidebar-user-info {
+.console-sidebar.collapsed .sidebar-user-info,
+.console-sidebar.collapsed .sidebar-role {
   display: none;
 }
 
@@ -58,17 +213,23 @@
   justify-content: center;
 }
 
+.console-sidebar.collapsed .sidebar-theme-btn {
+  justify-content: center;
+  padding-left: 0;
+  padding-right: 0;
+}
+
 .console-backdrop {
   display: none;
 }
 
 .sidebar-collapse-btn {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.6);
+  background: var(--c-wash);
+  border: 1px solid var(--c-border-strong);
+  color: var(--c-sidebar-link);
   width: 26px;
   height: 26px;
-  border-radius: 8px;
+  border-radius: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -76,11 +237,31 @@
   flex: 0 0 auto;
 }
 .sidebar-collapse-btn:hover {
-  color: #fff;
-  background: rgba(255, 255, 255, 0.12);
+  color: var(--c-text);
+  background: var(--c-wash-strong);
 }
 .console-sidebar.collapsed .sidebar-collapse-btn svg {
   transform: rotate(180deg);
+}
+
+/* The drawer gets an explicit close control on mobile. */
+.sidebar-close-btn {
+  display: none;
+  margin-left: auto;
+  width: 32px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  background: var(--c-wash);
+  border: 1px solid var(--c-border-strong);
+  color: var(--c-sidebar-link);
+  border-radius: 0;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+.sidebar-close-btn:hover {
+  color: var(--c-text);
+  background: var(--c-wash-strong);
 }
 
 @media (max-width: 900px) {
@@ -91,10 +272,8 @@
     position: sticky;
     top: 0;
     z-index: 60;
-    background: rgba(7, 7, 10, 0.92);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--c-bg-translucent);
+    border-bottom: 1px solid var(--c-border);
     padding: 0.85rem 1rem;
   }
 
@@ -106,10 +285,34 @@
     width: 260px;
     flex-basis: 260px;
     transform: translateX(-100%);
-    transition: transform 0.25s ease;
+    /* The whole drawer scrolls on a phone so every section and the account
+       controls stay reachable, even on a short screen. */
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    /* Hidden from keyboard/screen readers while off-canvas; visibility is
+       delayed so the close animation still plays. */
+    visibility: hidden;
+    transition: transform 0.25s ease, visibility 0s linear 0.25s;
   }
   .console-sidebar.mobile-open {
     transform: translateX(0);
+    visibility: visible;
+    z-index: 70; /* above the mobile bar (60) and backdrop (65) */
+    transition: transform 0.25s ease, visibility 0s linear 0s;
+  }
+  .console-sidebar .console-scroll {
+    flex: 0 0 auto !important;
+    overflow-y: visible !important;
+  }
+  .sidebar-close-btn {
+    display: flex;
+  }
+  .console-toast-wrap {
+    top: auto;
+    right: 1rem;
+    bottom: calc(1rem + env(safe-area-inset-bottom));
+    left: 1rem;
+    width: auto;
   }
   .console-sidebar.collapsed {
     width: 260px;
@@ -144,8 +347,8 @@
     display: block;
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.4);
-    z-index: 40;
+    background: var(--c-backdrop);
+    z-index: 65;
   }
 
   .console-main {
@@ -154,81 +357,109 @@
 }
 
 .sidebar-burger {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--c-wash);
+  border: 1px solid var(--c-border-strong);
   width: 36px;
   height: 36px;
-  border-radius: 10px;
+  border-radius: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: #f4f4f6;
+  color: var(--c-text);
   flex: 0 0 auto;
 }
 
-/* ============================================================
-   Demo accounts (login screen)
-   ============================================================ */
-.demo-divider {
+/* Theme switch on the mobile top bar -- the sidebar is off-canvas there. */
+.mobile-theme-btn {
+  margin-left: auto;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--c-border-strong);
+  border-radius: 0;
+  background: var(--c-wash);
+  color: var(--c-text-dim);
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+.mobile-theme-btn:hover {
+  color: var(--c-text);
+  background: var(--c-wash-strong);
+}
+
+/* Workspace identity: "Admin workspace", "Client portal · Sahel Bank". */
+.sidebar-role {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0 0.5rem 0.35rem;
+  padding: 0.3rem 0.9rem;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--c-sidebar-label);
+}
+.sidebar-role-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--c-accent-bright);
+  flex: 0 0 auto;
+}
+.sidebar-role-org {
+  color: var(--c-text);
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 600;
+  font-size: 0.72rem;
+}
+
+/* Theme switch sits with the account controls, not in the main nav. */
+.sidebar-theme-btn {
+  width: 100%;
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  margin: 1.1rem 0 0.9rem;
-  color: rgba(255, 255, 255, 0.4);
-  font-size: 0.72rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-.demo-divider::before,
-.demo-divider::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: rgba(255, 255, 255, 0.12);
-}
-
-.demo-accounts {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.demo-account-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.2rem;
-  width: 100%;
-  text-align: left;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  padding: 0.65rem 0.9rem;
+  min-height: 40px;
+  margin-bottom: 0.5rem;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid var(--c-border-strong);
+  border-radius: 0;
+  background: transparent;
+  color: var(--c-sidebar-link);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 500;
   cursor: pointer;
-  color: #f4f4f6;
-  transition: background-color 120ms ease, border-color 120ms ease;
+  transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
 }
-.demo-account-btn:hover:not(:disabled) {
-  background: rgba(124, 58, 237, 0.12);
-  border-color: rgba(124, 58, 237, 0.4);
-}
-.demo-account-btn:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-.demo-account-role {
-  font-size: 0.85rem;
-  font-weight: 600;
-}
-.demo-account-blurb {
-  font-size: 0.76rem;
-  color: rgba(255, 255, 255, 0.58);
+.sidebar-theme-btn:hover {
+  background: var(--c-wash);
+  border-color: var(--c-border-strong);
+  color: var(--c-text);
 }
 
 /* ============================================================
    Interaction basics: visible focus, target sizes, motion
    ============================================================ */
+
+/* Visually hidden but still announced by screen readers. Lives here
+   because the console page no longer imports the marketing sheet. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 
 @keyframes ultorn-spin {
   to { transform: rotate(360deg); }
@@ -237,12 +468,12 @@
 /* Every interactive control gets the same focus treatment, so keyboard
    users always know where they are (WCAG 2.4.7). */
 .console-shell :focus-visible {
-  outline: 2px solid #7c3aed;
+  outline: 2px solid var(--c-accent);
   outline-offset: 2px;
-  border-radius: 8px;
+  border-radius: 0;
 }
 .console-sidebar :focus-visible {
-  outline-color: #c4b5fd;
+  outline-color: var(--c-accent-bright);
 }
 .console-shell button,
 .console-shell a,
@@ -259,8 +490,8 @@
   transition: background-color 120ms ease, color 120ms ease;
 }
 .sidebar-link:hover {
-  background: rgba(255, 255, 255, 0.055);
-  color: #f4f4f6;
+  background: var(--c-wash);
+  color: var(--c-text);
 }
 
 /* Thin, unobtrusive scrollbars for the dark workspace -- the default
@@ -269,7 +500,7 @@
 .split-panel-list,
 .split-panel-detail {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+  scrollbar-color: var(--c-scrollbar) transparent;
 }
 .console-scroll::-webkit-scrollbar,
 .split-panel-list::-webkit-scrollbar,
@@ -279,20 +510,20 @@
 .console-scroll::-webkit-scrollbar-thumb,
 .split-panel-list::-webkit-scrollbar-thumb,
 .split-panel-detail::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.16);
+  background: var(--c-scrollbar);
   border-radius: 999px;
 }
 .console-scroll::-webkit-scrollbar-thumb:hover,
 .split-panel-list::-webkit-scrollbar-thumb:hover,
 .split-panel-detail::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.28);
+  background: var(--c-scrollbar-hover);
 }
 .sidebar-home {
   text-decoration: none;
 }
 .sidebar-home:hover {
-  background: rgba(255, 255, 255, 0.06) !important;
-  color: #fff !important;
+  background: var(--c-wash) !important;
+  color: var(--c-text) !important;
 }
 .list-row-button {
   width: 100%;
@@ -305,6 +536,99 @@
 
 /* The list/detail workspace stacks on narrow screens instead of forcing
    two cramped columns. Touch targets stay full-width. */
+@media (max-width: 1100px) {
+  /* Data tables become stacked cards on narrower screens. Labels come from each
+     cell's data-label so no information is lost when the header is hidden. */
+  .responsive-table {
+    display: block;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+  .responsive-table thead {
+    display: none;
+  }
+  .responsive-table tbody {
+    display: block;
+  }
+  .responsive-table tr {
+    display: block;
+    padding: 0.85rem 0;
+  }
+  .responsive-table tr:first-child {
+    padding-top: 0.2rem;
+  }
+  .responsive-table tr:last-child {
+    border-bottom: 0 !important;
+    padding-bottom: 0.15rem;
+  }
+  .responsive-table td {
+    display: block;
+    width: 100%;
+    padding: 0.2rem 0 !important;
+    border: 0 !important;
+    text-align: left !important;
+    white-space: normal !important;
+  }
+  .responsive-table td[data-label] {
+    display: grid;
+    grid-template-columns: 5.6rem minmax(0, 1fr);
+    gap: 0.55rem;
+    align-items: center;
+  }
+  .responsive-table td[data-label]::before {
+    content: attr(data-label);
+    font-size: 0.64rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--c-text-faint);
+  }
+  .responsive-table td[data-label] > span {
+    justify-self: start;
+    align-self: center;
+  }
+  .split-panel-list .list-row-title {
+    display: -webkit-box;
+    overflow: hidden !important;
+    white-space: normal !important;
+    text-overflow: clip !important;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+  .responsive-table td.responsive-primary {
+    padding-bottom: 0.4rem !important;
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1.4;
+  }
+  .responsive-table td.responsive-form {
+    display: block;
+    padding: 0.45rem 0 !important;
+  }
+  .responsive-table td.responsive-form::before {
+    display: block;
+    margin-bottom: 0.35rem;
+  }
+  .responsive-table td.responsive-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 0.45rem;
+    padding-top: 0.55rem !important;
+  }
+  .responsive-table td.responsive-actions:empty {
+    display: none;
+  }
+  .responsive-table td.responsive-actions button {
+    margin-left: 0 !important;
+  }
+  .responsive-table td[colspan] {
+    padding: 0.9rem 0 !important;
+    text-align: center !important;
+  }
+
+}
+
 @media (max-width: 760px) {
   .split-panel-body {
     flex-direction: column !important;
@@ -314,7 +638,7 @@
     flex: 0 0 auto !important;
     max-height: 260px;
     border-right: 0 !important;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    border-bottom: 1px solid var(--c-border);
   }
   .split-panel-detail {
     flex: 1 1 auto !important;
@@ -325,6 +649,17 @@
   }
   .console-main .stat-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .alerts-filter {
+    flex: 1 1 100%;
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  .responsive-stat-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.65rem !important;
   }
 }
 
@@ -339,9 +674,9 @@
   }
 }
 
-@keyframes ultorn-sheen {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+@keyframes ultorn-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
 }
 
 @media (max-width: 560px) {

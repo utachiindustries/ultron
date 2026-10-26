@@ -1,21 +1,23 @@
 /* Shared design language for scrollable marketing pages (platform, scanning,
-   sovereignty, contact, legal), same palette/type as the hero, independent
-   of the hero's viewport-locked --u scaling system since these pages scroll. */
+   sovereignty, contact, legal). Ink-on-paper, same as every other Utachi
+   surface: square corners, hairline rules, no gradients or glass. */
 
 :root {
-  --m-bg: #000000;
-  --m-ink: #ffffff;
-  --m-ink-muted: #ededed;
-  --m-dim: rgba(255, 255, 255, 0.62);
-  --m-dimmer: rgba(255, 255, 255, 0.4);
-  --m-line: rgba(255, 255, 255, 0.12);
-  --m-panel: #181818;
-  --m-white-btn: #fdfdfd;
-  --m-btn-ink: #050505;
-  --m-glass: rgba(0, 0, 0, 0.78);
-  --m-glass-line: rgba(255, 255, 255, 0.09);
-  --m-font: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-    sans-serif;
+  --m-bg: #fcfcfa;
+  --m-ink: #0a0a0a;
+  --m-ink-muted: #333333;
+  --m-dim: #595959;
+  --m-dimmer: #8c8c8c;
+  --m-line: #d9d9d9;
+  --m-panel: #f5f5f5;
+  --m-white-btn: #0a0a0a;
+  --m-btn-ink: #ffffff;
+  --m-glass: #ffffff;
+  --m-glass-line: #d9d9d9;
+  --m-accent: #3d6658;
+  --m-font: 'Space Grotesk', 'Segoe UI', system-ui, sans-serif;
+  --m-font-display: 'Cormorant Garamond', Georgia, serif;
+  --m-font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 }
 
 .sr-only {
@@ -51,9 +53,7 @@
   justify-content: space-between;
   gap: 24px;
   padding: 20px clamp(20px, 4vw, 50px);
-  background: rgba(2, 2, 4, 0.72);
-  -webkit-backdrop-filter: blur(16px);
-  backdrop-filter: blur(16px);
+  background: var(--m-bg);
   border-bottom: 1px solid var(--m-line);
 }
 .mlogo {
@@ -71,7 +71,7 @@
 .mlogo-divider {
   width: 1px;
   height: 16px;
-  background: rgba(255, 255, 255, 0.22);
+  background: var(--m-line);
 }
 .mlogo-product {
   font-weight: 600;
@@ -93,10 +93,10 @@
   transition: color 0.18s ease;
 }
 .mnav-links a:hover {
-  color: #fff;
+  color: var(--m-ink);
 }
 .mnav-links a[aria-current='page'] {
-  color: #fff;
+  color: var(--m-accent);
 }
 .mnav-actions {
   display: flex;
@@ -118,15 +118,19 @@
 .mbtn-login {
   height: 34px;
   padding: 0 16px;
-  border-radius: 17px;
-  background: var(--m-panel);
-  color: #e8e8e8;
-  font-size: 13px;
-  font-weight: 500;
+  border-radius: 0;
+  border: 1px solid var(--m-ink);
+  background: transparent;
+  color: var(--m-ink);
+  font-family: var(--m-font-mono);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 .mbtn-login:hover {
-  background: #232323;
-  color: #fff;
+  background: var(--m-ink);
+  color: var(--m-bg);
 }
 .marw {
   width: 11px;
@@ -142,8 +146,8 @@
   align-items: center;
   justify-content: center;
   background: var(--m-panel);
-  border-radius: 15px;
-  border: 0;
+  border-radius: 0;
+  border: 1px solid var(--m-line);
   cursor: pointer;
   padding: 0;
 }
@@ -151,8 +155,8 @@
   display: block;
   width: 15px;
   height: 1.5px;
-  background: #ededed;
-  border-radius: 2px;
+  background: var(--m-ink);
+  border-radius: 0;
   position: relative;
 }
 .mburger span::before,
@@ -162,8 +166,8 @@
   left: 0;
   width: 15px;
   height: 1.5px;
-  background: #ededed;
-  border-radius: 2px;
+  background: var(--m-ink);
+  border-radius: 0;
 }
 .mburger span::before {
   top: -5px;
@@ -188,9 +192,7 @@
   position: sticky;
   top: 69px;
   z-index: 19;
-  background: rgba(8, 8, 10, 0.96);
-  -webkit-backdrop-filter: blur(20px);
-  backdrop-filter: blur(20px);
+  background: var(--m-bg);
   border-bottom: 1px solid var(--m-line);
   padding: 8px 12px 14px;
 }
@@ -203,11 +205,11 @@
   font-size: 15px;
   font-weight: 500;
   padding: 13px 10px;
-  border-radius: 10px;
+  border-radius: 0;
 }
 .mmenu a:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: #fff;
+  background: var(--m-panel);
+  color: var(--m-ink);
 }
 .mmenu .mdivider {
   height: 1px;
@@ -223,15 +225,17 @@
   padding: clamp(56px, 9vw, 120px) clamp(20px, 5vw, 60px) clamp(24px, 4vw, 40px);
 }
 .page-eyebrow {
-  font-size: 13px;
-  font-weight: 600;
+  font-family: var(--m-font-mono);
+  font-size: 12px;
+  font-weight: 400;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--m-dim);
 }
 .page-title {
   margin: 16px 0 0;
-  font-weight: 500;
+  font-family: var(--m-font-display);
+  font-weight: 400;
   font-size: clamp(34px, 5.2vw, 60px);
   line-height: 1.08;
   letter-spacing: -0.01em;
@@ -240,13 +244,14 @@
 .page-lede {
   margin: 20px 0 0;
   max-width: 620px;
-  font-weight: 300;
+  font-weight: 400;
   font-size: clamp(16px, 1.6vw, 19px);
   line-height: 1.55;
-  color: #f0f0f0;
+  color: var(--m-ink-muted);
 }
 .page-updated {
   margin-top: 10px;
+  font-family: var(--m-font-mono);
   font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -285,7 +290,7 @@
 .feature-grid p {
   margin: 0;
   max-width: 620px;
-  font-weight: 300;
+  font-weight: 400;
   font-size: 15px;
   line-height: 1.6;
   color: var(--m-dim);
@@ -305,7 +310,7 @@
 .legal-doc p {
   margin: 0;
   max-width: 680px;
-  font-weight: 300;
+  font-weight: 400;
   font-size: 15px;
   line-height: 1.7;
   color: var(--m-dim);
@@ -330,6 +335,7 @@
   border-bottom: 1px solid var(--m-line);
 }
 .contact-grid span {
+  font-family: var(--m-font-mono);
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.1em;
@@ -340,7 +346,7 @@
   font-size: 17px;
   color: var(--m-ink);
   text-decoration: none;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.26);
+  border-bottom: 1px solid var(--m-line);
 }
 .contact-grid a:hover {
   color: var(--m-dim);
@@ -356,7 +362,7 @@
   text-decoration: none;
 }
 .back-link:hover {
-  color: #fff;
+  color: var(--m-ink);
 }
 
 /* ---------------------------------------------------------------- */
@@ -367,7 +373,7 @@
   padding: 24px clamp(20px, 5vw, 60px);
   text-align: center;
   font-size: 13px;
-  font-weight: 300;
+  font-weight: 400;
   color: var(--m-dim);
 }
 .mfooter a {
@@ -379,162 +385,10 @@
   color: var(--m-dim);
 }
 
-/* ---------------------------------------------------------------- */
-/* Console login, same dark/mono language as the landing page          */
-/* ---------------------------------------------------------------- */
-.login-shell {
-  min-height: 100vh;
-  min-height: 100dvh;
-  background: var(--m-bg);
-  color: var(--m-ink);
-  font-family: var(--m-font);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-}
-.login-card {
-  width: 100%;
-  max-width: 380px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-}
-.login-logo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  text-decoration: none;
-  margin-bottom: 28px;
-}
-.login-logo img {
-  height: 40px;
-  width: auto;
-  display: block;
-}
-.login-logo .mlogo-divider {
-  width: 1px;
-  height: 18px;
-  background: rgba(255, 255, 255, 0.22);
-}
-.login-logo .mlogo-product {
-  font-weight: 600;
-  font-size: 14px;
-  letter-spacing: 0.03em;
-  color: var(--m-ink-muted);
-}
-.login-chip {
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  background: rgba(255, 255, 255, 0.09);
-  padding: 8px 14px;
-  margin-bottom: 20px;
-}
-.login-title {
-  margin: 0;
-  font-weight: 500;
-  font-size: 30px;
-  letter-spacing: -0.01em;
-}
-.login-sub {
-  margin: 10px 0 0;
-  font-size: 14px;
-  color: var(--m-dim);
-}
-.login-notice {
-  width: 100%;
-  margin-top: 18px;
-  padding: 10px 14px;
-  border: 1px solid rgba(74, 222, 128, 0.28);
-  background: rgba(74, 222, 128, 0.1);
-  color: #bbf7d0;
-  font-size: 13px;
-  line-height: 1.5;
-  text-align: left;
-}
-.login-form {
-  width: 100%;
-  margin-top: 34px;
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
-.login-field {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.login-label {
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--m-dim);
-}
-.login-input {
-  width: 100%;
-  background: transparent;
-  border: none;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.26);
-  border-radius: 0;
-  padding: 0 2px 14px;
-  font-family: var(--m-font);
-  font-weight: 300;
-  font-size: 16px;
-  color: var(--m-ink);
-  transition: border-color 0.18s ease;
-}
-.login-input::placeholder {
-  color: var(--m-dim);
-}
-.login-input:focus {
-  outline: none;
-  border-bottom-color: rgba(255, 255, 255, 0.85);
-}
-.login-btn {
-  width: 100%;
-  border: 0;
-  border-radius: 0;
-  padding: 16px 20px;
-  background: var(--m-white-btn);
-  color: var(--m-btn-ink);
-  font-family: var(--m-font);
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.16em;
-  font-size: 13px;
-  cursor: pointer;
-  transition: background 0.18s ease;
-}
-.login-btn:hover {
-  background: #fff;
-}
-.login-error {
-  font-size: 13px;
-  color: #ff8a8a;
-}
-.login-hint {
-  margin-top: 24px;
-  font-size: 12px;
-  color: var(--m-dimmer);
-}
-.login-back {
-  margin-top: 40px;
-  font-size: 13px;
-  color: var(--m-dim);
-  text-decoration: none;
-}
-.login-back:hover {
-  color: #fff;
-}
-
 .mbtn:focus-visible,
 .mnav-links a:focus-visible,
 .mmenu a:focus-visible {
-  outline: 2px solid #a78bfa;
+  outline: 2px solid var(--m-accent);
   outline-offset: 3px;
-  border-radius: 10px;
+  border-radius: 0;
 }
