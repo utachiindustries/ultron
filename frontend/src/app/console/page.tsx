@@ -1,30 +1,32 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import '../marketing-page.css'
 import '../console.css'
+import '../auth.css'
+import AuthShell from '../../components/AuthShell'
+import { PasswordField, TextField } from '../../components/auth-ui'
 import Modal from '../../components/Modal'
+import { useTheme } from '../../components/theme'
 import { Button, ConfirmDialog, Field, Select, TextInput, Textarea, Toast } from './ui'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-const ACCENT = '#7c3aed'
-const ACCENT_BRIGHT = '#a78bfa'
-const ACCENT_SOFT = 'rgba(124,58,237,0.12)'
-const ACCENT_BORDER = 'rgba(124,58,237,0.3)'
+const ACCENT = 'var(--c-accent)'
+const ACCENT_BRIGHT = 'var(--c-accent-bright)'
+const ACCENT_SOFT = 'var(--c-accent-soft)'
+const ACCENT_BORDER = 'var(--c-accent-border)'
 
-// Operator-console surface system: one dark, high-contrast workspace rather
-// than the old light-chrome-with-dark-panels split, closer to the register
-// of an operations/intel tool than a marketing page. The pre-auth login
-// screen intentionally keeps its own (marketing-brand) look.
-const BG = '#07070a'
-const SURFACE = '#0e0e12'
-const SURFACE_RAISED = '#15151b'
-const SURFACE_SUNKEN = 'rgba(255,255,255,0.035)'
-const BORDER = 'rgba(255,255,255,0.08)'
-const BORDER_STRONG = 'rgba(255,255,255,0.14)'
-const TEXT = '#f4f4f6'
-const TEXT_DIM = 'rgba(244,244,246,0.64)'
-const TEXT_FAINT = 'rgba(244,244,246,0.42)'
+// Operator-console surface system. Every color is a CSS variable so the
+// light/dark switch repaints the workspace (including charts, fields and
+// modals) without a second component tree.
+const BG = 'var(--c-bg)'
+const SURFACE = 'var(--c-surface)'
+const SURFACE_RAISED = 'var(--c-surface-raised)'
+const SURFACE_SUNKEN = 'var(--c-sunken)'
+const BORDER = 'var(--c-border)'
+const BORDER_STRONG = 'var(--c-border-strong)'
+const TEXT = 'var(--c-text)'
+const TEXT_DIM = 'var(--c-text-dim)'
+const TEXT_FAINT = 'var(--c-text-faint)'
 const MONO = "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
 
 // One-click "try it" personas, seeded by `backend/seed_demo.py`. Only
@@ -108,6 +110,11 @@ const ICONS: Record<string, React.ReactNode> = {
       <path d="M3 6h18M3 12h18M3 18h18" />
     </svg>
   ),
+  close: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <path d="M6 6l12 12M18 6L6 18" />
+    </svg>
+  ),
   monitors: (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
       <rect x="2" y="3" width="20" height="14" rx="2" /><path d="M8 21v-2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2" />
@@ -139,14 +146,31 @@ const ICONS: Record<string, React.ReactNode> = {
       <circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" />
     </svg>
   ),
+  sun: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+    </svg>
+  ),
+  moon: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20.5 14.1A8.5 8.5 0 0 1 9.9 3.5a8.5 8.5 0 1 0 10.6 10.6Z" />
+    </svg>
+  ),
 }
+
+const EMAIL_PATTERN = /^\S+@\S+\.\S+$/
 
 function LoginScreen({ onToken, notice }: { onToken: (token: string) => void; notice?: string }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [emailError, setEmailError] = useState('')
+  const [passwordError, setPasswordError] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [demoLoading, setDemoLoading] = useState<string | null>(null)
+  const emailRef = useRef<HTMLInputElement>(null)
+  const passwordRef = useRef<HTMLInputElement>(null)
 
   const authenticate = async (loginEmail: string, loginPassword: string) => {
     const res = await fetch(`${API_URL}/auth/token`, {
@@ -159,10 +183,31 @@ function LoginScreen({ onToken, notice }: { onToken: (token: string) => void; no
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setSubmitting(true)
     setError('')
+
+    // Validate locally first: /auth/token is rate-limited (10 attempts per
+    // minute per IP), so an obviously empty form should never spend one.
+    const nextEmailError =
+      email.trim() === ''
+        ? 'Enter your email address.'
+        : EMAIL_PATTERN.test(email.trim())
+          ? ''
+          : 'Check the email address format.'
+    const nextPasswordError = password === '' ? 'Enter your password.' : ''
+    setEmailError(nextEmailError)
+    setPasswordError(nextPasswordError)
+    if (nextEmailError) {
+      emailRef.current?.focus()
+      return
+    }
+    if (nextPasswordError) {
+      passwordRef.current?.focus()
+      return
+    }
+
+    setSubmitting(true)
     try {
-      const data = await authenticate(email, password)
+      const data = await authenticate(email.trim(), password)
       if (data.access_token) {
         localStorage.setItem('token', data.access_token)
         onToken(data.access_token)
@@ -198,84 +243,112 @@ function LoginScreen({ onToken, notice }: { onToken: (token: string) => void; no
   }
 
   return (
-    <div className="login-shell">
-      <link rel="preconnect" href="https://fonts.googleapis.com" />
-      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-      <link
-        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
-        rel="stylesheet"
-      />
-      <div className="login-card">
-        <a href="/" className="login-logo">
-          <img src="/brand/utachi-logo-white.png" alt="Utachi Industries" />
-          <span className="mlogo-divider" />
-          <span className="mlogo-product">Ultorn</span>
-        </a>
-        <span className="login-chip">[ Sovereign access ]</span>
-        <h1 className="login-title">Welcome back.</h1>
-        <p className="login-sub">Sign in to the operator console.</p>
-        {notice && <div className="login-notice" role="status">{notice}</div>}
-
-        <form className="login-form" onSubmit={submit}>
-          <div className="login-field">
-            <label className="login-label" htmlFor="login-email">Email</label>
-            <input
-              id="login-email"
-              className="login-input"
-              type="email"
-              placeholder="you@company.sn"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="email"
-              autoFocus
-            />
-          </div>
-          <div className="login-field">
-            <label className="login-label" htmlFor="login-password">Password</label>
-            <input
-              id="login-password"
-              className="login-input"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
-            />
-          </div>
-          {error && <div className="login-error" role="alert">{error}</div>}
-          <button type="submit" className="login-btn" disabled={submitting} aria-busy={submitting}>
-            {submitting ? 'Verifying…' : 'Sign in'}
-          </button>
-        </form>
-
-        <p className="login-hint">Access is provisioned by your Ultorn administrator.</p>
-
-        <div className="demo-divider" role="separator">
-          <span>or explore first</span>
+    <AuthShell>
+      <span className="auth-kicker">Sovereign access</span>
+      <h1 className="auth-title">Welcome back.</h1>
+      <p className="auth-sub">Sign in to the operator console.</p>
+      {notice && (
+        <div className="auth-notice" role="status">
+          {notice}
         </div>
-        <div className="demo-accounts" role="group" aria-label="Try a demo account">
-          {DEMO_ACCOUNTS.map((account) => (
-            <button
-              key={account.email}
-              type="button"
-              className="demo-account-btn"
-              onClick={() => loginAsDemo(account)}
-              disabled={demoLoading !== null}
-              aria-busy={demoLoading === account.email}
-            >
-              <span className="demo-account-role">
+      )}
+
+      <form className="auth-form" onSubmit={submit} noValidate>
+        <TextField
+          id="login-email"
+          label="Email"
+          type="email"
+          value={email}
+          onChange={(e) => {
+            setEmail(e.target.value)
+            if (emailError) setEmailError('')
+          }}
+          autoComplete="email"
+          placeholder="you@company.sn"
+          inputRef={emailRef}
+          error={emailError}
+          autoFocus
+        />
+        <PasswordField
+          id="login-password"
+          label="Password"
+          value={password}
+          onChange={(e) => {
+            setPassword(e.target.value)
+            if (passwordError) setPasswordError('')
+          }}
+          autoComplete="current-password"
+          inputRef={passwordRef}
+          error={passwordError}
+          labelAction={
+            <a className="auth-inline-link" href="/forgot-password">
+              Forgot password?
+            </a>
+          }
+        />
+
+        {error && (
+          <div className="login-error" role="alert">
+            {error}
+          </div>
+        )}
+
+        <button type="submit" className="auth-submit" disabled={submitting} aria-busy={submitting}>
+          {submitting && <span className="auth-spinner" aria-hidden="true" />}
+          {submitting ? 'Signing in…' : 'Sign in'}
+        </button>
+      </form>
+
+      <p className="auth-hint">Access is provisioned by your Ultorn administrator.</p>
+
+      <div className="auth-divider" role="separator">
+        <span>or explore first</span>
+      </div>
+
+      <div className="auth-demo" role="group" aria-label="Try a demo account">
+        {DEMO_ACCOUNTS.map((account) => (
+          <button
+            key={account.email}
+            type="button"
+            className="auth-demo-btn"
+            onClick={() => loginAsDemo(account)}
+            disabled={demoLoading !== null}
+            aria-busy={demoLoading === account.email}
+          >
+            <span className="auth-demo-text">
+              <span className="auth-demo-role">
                 {demoLoading === account.email ? 'Signing in…' : `Try as ${account.role}`}
               </span>
-              <span className="demo-account-blurb">{account.blurb}</span>
-            </button>
-          ))}
-        </div>
-        <p className="login-hint">
-          Demo accounts drop you straight into the console with sample clients and findings already loaded.
-        </p>
-
-        <a href="/" className="login-back">← Back to home</a>
+              <span className="auth-demo-blurb">{account.blurb}</span>
+            </span>
+            <span className="auth-demo-arrow" aria-hidden="true">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M5 12h14M13 6l6 6-6 6" />
+              </svg>
+            </span>
+          </button>
+        ))}
       </div>
-    </div>
+      <p className="auth-hint">
+        Demo accounts drop you straight into the console with sample clients and findings already loaded.
+      </p>
+
+      <div className="auth-links">
+        <span>New to Ultorn?</span>
+        <a className="auth-link-strong" href="/signup">
+          Create an account
+        </a>
+      </div>
+    </AuthShell>
   )
 }
 
@@ -348,10 +421,10 @@ function ChangePasswordButton({
           justifyContent: 'center',
           gap: '0.5rem',
           background: 'transparent',
-          border: '1px solid rgba(255,255,255,0.14)',
-          color: 'rgba(255,255,255,0.72)',
+          border: '1px solid var(--c-border-strong)',
+          color: 'var(--c-text-soft)',
           padding: '0.5rem 0.9rem',
-          borderRadius: '10px',
+          borderRadius: 0,
           cursor: 'pointer',
           fontSize: '0.8rem',
           fontWeight: 500,
@@ -370,7 +443,7 @@ function ChangePasswordButton({
         <Modal title="Change password" onClose={close}>
           <form onSubmit={submit}>
             {error && (
-              <div role="alert" style={{ color: '#fca5a5', fontSize: '0.82rem', marginBottom: '0.8rem' }}>
+              <div role="alert" style={{ color: 'var(--c-danger)', fontSize: '0.82rem', marginBottom: '0.8rem' }}>
                 {error}
               </div>
             )}
@@ -409,7 +482,7 @@ function ChangePasswordButton({
               <Button type="submit" loading={saving}>Update password</Button>
               <Button variant="secondaryDark" onClick={close} disabled={saving}>Cancel</Button>
             </div>
-            <p style={{ color: 'rgba(255,255,255,0.58)', fontSize: '0.78rem', margin: '0.9rem 0 0' }}>
+            <p style={{ color: 'var(--c-text-dim)', fontSize: '0.78rem', margin: '0.9rem 0 0' }}>
               You will be signed out and asked to sign in with the new password.
             </p>
           </form>
@@ -436,7 +509,7 @@ function StatCard({
   emphasis?: boolean
 }) {
   const valueColor =
-    tone === 'danger' ? '#f87171' : tone === 'warning' ? '#fbbf24' : tone === 'success' ? '#4ade80' : TEXT
+    tone === 'danger' ? 'var(--c-danger-strong)' : tone === 'warning' ? 'var(--c-warn)' : tone === 'success' ? 'var(--c-success)' : TEXT
   return (
     <div style={{ ...styles.statCard, ...(emphasis ? styles.statCardEmphasis : {}) }}>
       <div style={styles.statLabel}>{label}</div>
@@ -457,11 +530,11 @@ function Metric({ label, value }: { label: string; value: string | number }) {
 
 function Badge({ children, tone = 'neutral' }: { children: React.ReactNode; tone?: string }) {
   const tones: any = {
-    neutral: { background: 'rgba(255,255,255,0.08)', color: '#d4d4d8' },
-    success: { background: 'rgba(52,211,153,0.15)', color: '#6ee7b7' },
-    warning: { background: 'rgba(251,191,36,0.15)', color: '#fcd34d' },
-    danger: { background: 'rgba(248,113,113,0.15)', color: '#fca5a5' },
-    accent: { background: ACCENT_SOFT, color: '#d8b4fe' },
+    neutral: { background: 'var(--c-wash)', color: 'var(--c-text-dim)' },
+    success: { background: 'var(--c-success-soft)', color: 'var(--c-success)' },
+    warning: { background: 'var(--c-warn-soft)', color: 'var(--c-warn)' },
+    danger: { background: 'var(--c-danger-soft)', color: 'var(--c-danger)' },
+    accent: { background: ACCENT_SOFT, color: 'var(--c-accent-violet)' },
   }
   return (
     <span style={{ ...styles.badge, ...tones[tone] }}>{children}</span>
@@ -551,6 +624,7 @@ class ApiError extends Error {
 type ToastTone = 'info' | 'error' | 'success'
 
 function Page() {
+  const { theme, toggle } = useTheme()
   const [token, setToken] = useState<string | null>(null)
   const [authNotice, setAuthNotice] = useState('')
 
@@ -571,25 +645,76 @@ function Page() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const messageTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  /**
+   * Drop every tenant-scoped value together. Without this, a persona switch
+   * could render the next role with the previous user's `canManage` flag for
+   * the first frame -- which made a Client's dashboard request /audit, get a
+   * 403, and show "Insufficient permissions" until a full reload.
+   */
+  const clearWorkspace = () => {
+    if (messageTimer.current) {
+      clearTimeout(messageTimer.current)
+      messageTimer.current = null
+    }
+    setMessage(null)
+    setUser(null)
+    setClients([])
+    setScans([])
+    setFindings([])
+    setAudit([])
+    setMonitors([])
+    setAlerts([])
+    setCodeScans([])
+    setView('dashboard')
+    setMobileOpen(false)
+  }
+
+  const signOut = () => {
+    localStorage.removeItem('token')
+    setToken(null)
+    clearWorkspace()
+  }
+
   useEffect(() => {
     setCollapsed(localStorage.getItem('ultorn_sidebar_collapsed') === 'true')
   }, [])
 
+  // Escape closes the mobile drawer, same as the backdrop or a nav choice.
+  useEffect(() => {
+    if (!mobileOpen) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMobileOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [mobileOpen])
+
   useEffect(() => {
     if (!token) return
+    // The token changed: do not keep the previous account's profile around
+    // while /auth/me is in flight, and abort that request on sign-out so a
+    // late response cannot restore the previous persona.
+    const controller = new AbortController()
+    setUser(null)
     fetch(`${API_URL}/auth/me`, {
       headers: { Authorization: `Bearer ${token}` },
+      signal: controller.signal,
     })
       .then((r) => {
         if (r.status === 401) throw new Error('Session expired')
         if (!r.ok) throw new Error('Could not load your profile')
         return r.json()
       })
-      .then((data) => setUser(data))
+      .then((data) => {
+        if (!controller.signal.aborted) setUser(data)
+      })
       .catch(() => {
+        if (controller.signal.aborted) return
         localStorage.removeItem('token')
         setToken(null)
+        clearWorkspace()
       })
+    return () => controller.abort()
   }, [token])
 
   useEffect(() => () => {
@@ -618,7 +743,7 @@ function Page() {
     if (res.status === 401) {
       localStorage.removeItem('token')
       setToken(null)
-      setView('login')
+      clearWorkspace()
       throw new ApiError('Your session expired. Please sign in again.', 401)
     }
 
@@ -658,10 +783,23 @@ function Page() {
         notice={authNotice}
         onToken={(t: string) => {
           setAuthNotice('')
+          clearWorkspace()
           setToken(t)
-          setView('dashboard')
         }}
       />
+    )
+  }
+
+  // The profile decides what the console may show. Gate on it so a previous
+  // persona's role and permissions can never paint the next session.
+  if (!user) {
+    return (
+      <div style={{ ...styles.shell, alignItems: 'center', justifyContent: 'center' }}>
+        <div role="status" aria-live="polite" style={{ textAlign: 'center', color: TEXT_DIM }}>
+          <div className="console-workspace-loader" aria-hidden="true" />
+          <p style={{ margin: '1rem 0 0', fontSize: '0.85rem' }}>Loading your workspace…</p>
+        </div>
+      </div>
     )
   }
 
@@ -672,9 +810,32 @@ function Page() {
   const canManage = user?.role === 'admin' || user?.role === 'analyst'
   const isAdmin = user?.role === 'admin'
 
+  // The sidebar names the workspace, not just the role: a client landing in
+  // the same console shell should see their own organization, not internal
+  // operator framing.
+  const clientOrg = user?.role === 'client' ? clients[0] : null
+  const isClubPortal = user?.role === 'client' && clientOrg?.sector === 'sports'
+  const workspaceLabel =
+    user?.role === 'admin'
+      ? 'Admin workspace'
+      : user?.role === 'analyst'
+        ? 'Analyst workspace'
+        : isClubPortal
+          ? 'Club portal'
+          : 'Client portal'
+
   // Grouped so no menu exposes more than four choices at once (Hick's Law),
   // and ordered by the job an analyst is doing rather than by internal module.
-  const NAV_GROUPS = [
+  //
+  // The client role gets a structurally separate nav list (CLIENT_NAV_GROUPS),
+  // not a filtered view of the operator one: a client never configures scans,
+  // monitors, schedules, code scans or AI Guard -- those are the tooling that
+  // *produces* findings/alerts, not something a client reads or tunes. Keeping
+  // the two lists apart means a future change to operator nav can't silently
+  // change what a client sees, and vice versa.
+  const isClient = user?.role === 'client'
+
+  const OPERATOR_NAV_GROUPS = [
     {
       label: 'Overview',
       items: [{ key: 'dashboard', label: 'Dashboard', icon: 'dashboard' }],
@@ -717,6 +878,33 @@ function Page() {
     },
   ].filter((group) => group.items.length > 0)
 
+  // A client reads results, not operator tooling: Dashboard, Organization,
+  // Findings, Alerts, Compliance, Reports. No Scans, Monitors, Schedules,
+  // Code Scans or AI Guard.
+  const CLIENT_NAV_GROUPS = [
+    {
+      label: 'Overview',
+      items: [{ key: 'dashboard', label: 'Dashboard', icon: 'dashboard' }],
+    },
+    {
+      label: 'Operations',
+      items: [
+        { key: 'clients', label: 'Organization', icon: 'clients' },
+        { key: 'findings', label: 'Findings', icon: 'findings' },
+        { key: 'alerts', label: 'Alerts', icon: 'alerts' },
+      ],
+    },
+    {
+      label: 'Analysis',
+      items: [
+        { key: 'compliance', label: 'Compliance', icon: 'compliance' },
+        { key: 'reports', label: 'Reports', icon: 'reports' },
+      ],
+    },
+  ]
+
+  const NAV_GROUPS = isClient ? CLIENT_NAV_GROUPS : OPERATOR_NAV_GROUPS
+
   const currentLabel = NAV_GROUPS.flatMap((g) => g.items).find((i) => i.key === view)?.label || 'Ultorn'
 
   const ctx = {
@@ -739,9 +927,14 @@ function Page() {
         onClick={() => setMobileOpen(false)}
       />
 
-      <aside className={`console-sidebar${collapsed ? ' collapsed' : ''}${mobileOpen ? ' mobile-open' : ''}`} style={styles.sidebar}>
+      <aside id="console-sidebar" className={`console-sidebar${collapsed ? ' collapsed' : ''}${mobileOpen ? ' mobile-open' : ''}`} style={styles.sidebar}>
         <div className="sidebar-brand" style={styles.sidebarBrand}>
-          <img src="/brand/utachi-logo-white.png" alt="Utachi Industries" className="sidebar-logo-img" style={styles.navBrandLogo} />
+          <img
+            src={theme === 'light' ? '/brand/utachi-logo.png' : '/brand/utachi-logo-white.png'}
+            alt="Utachi Industries"
+            className="sidebar-logo-img"
+            style={styles.navBrandLogo}
+          />
           <span className="sidebar-brand-text-wrap">
             <span style={styles.navBrandDivider} />
             <span className="sidebar-brand-text" style={styles.sidebarBrandText}>Ultorn</span>
@@ -753,6 +946,22 @@ function Page() {
           >
             {ICONS.collapse}
           </button>
+          <button
+            type="button"
+            className="sidebar-close-btn"
+            aria-label="Close menu"
+            onClick={() => setMobileOpen(false)}
+          >
+            {ICONS.close}
+          </button>
+        </div>
+
+        <div className="sidebar-role">
+          <span className="sidebar-role-dot" aria-hidden="true" />
+          <span className="sidebar-label">
+            {workspaceLabel}
+            {clientOrg && <span className="sidebar-role-org"> · {clientOrg.name}</span>}
+          </span>
         </div>
 
         <a
@@ -762,7 +971,7 @@ function Page() {
           title="Back to landing page"
           style={{
             ...styles.sidebarLink,
-            color: 'rgba(255,255,255,0.5)',
+            color: 'var(--c-sidebar-label)',
             fontSize: '0.8rem',
             margin: '0 0.5rem 0.25rem',
             padding: '0.55rem 0.9rem',
@@ -803,19 +1012,32 @@ function Page() {
             <div style={styles.sidebarAvatar}>{(user?.email || '?')[0].toUpperCase()}</div>
             <div className="sidebar-user-info" style={{ minWidth: 0 }}>
               <div style={styles.sidebarUserEmail}>{user?.email || '…'}</div>
-              <div style={styles.sidebarUserRole}>{user?.role || ''}</div>
+              <div style={styles.sidebarUserRole}>
+                {user?.role || ''}
+                {clientOrg ? ` · ${clientOrg.name}` : ''}
+              </div>
             </div>
           </div>
+          <button
+            type="button"
+            className="sidebar-theme-btn"
+            onClick={toggle}
+            aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+            title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+          >
+            <span style={styles.sidebarIcon} aria-hidden="true">
+              {theme === 'dark' ? ICONS.sun : ICONS.moon}
+            </span>
+            <span className="sidebar-label">{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
+          </button>
           <ChangePasswordButton
             api={api}
             onChanged={(notice) => {
               setAuthNotice(notice)
-              localStorage.removeItem('token')
-              setToken(null)
-              setView('login')
+              signOut()
             }}
           />
-          <button onClick={() => { localStorage.removeItem('token'); setToken(null); setView('login') }} style={styles.sidebarSignOut}>
+          <button onClick={signOut} style={styles.sidebarSignOut}>
             Sign out
           </button>
         </div>
@@ -823,19 +1045,44 @@ function Page() {
 
       <div className="console-main" style={{ flex: 1, minWidth: 0 }}>
         <div className="console-mobile-bar">
-          <button className="sidebar-burger" aria-label="Open menu" onClick={() => setMobileOpen(true)}>
+          <button
+            className="sidebar-burger"
+            aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={mobileOpen}
+            aria-controls="console-sidebar"
+            onClick={() => setMobileOpen((v) => !v)}
+          >
             {ICONS.menu}
           </button>
-          <img src="/brand/utachi-logo.png" alt="Utachi Industries" style={{ height: '20px' }} />
+          <img
+            src={theme === 'light' ? '/brand/utachi-logo.png' : '/brand/utachi-logo-white.png'}
+            alt="Utachi Industries"
+            style={{ height: '20px' }}
+          />
           <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{currentLabel}</span>
+          <button
+            type="button"
+            className="mobile-theme-btn"
+            onClick={toggle}
+            aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+            title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+          >
+            {theme === 'dark' ? ICONS.sun : ICONS.moon}
+          </button>
         </div>
 
         <main style={styles.main}>
           {message && (
-            <Toast message={message.text} tone={message.type} onDismiss={() => setMessage(null)} />
+            <div className="console-toast-wrap">
+              <Toast message={message.text} tone={message.type} onDismiss={() => setMessage(null)} />
+            </div>
           )}
 
-          {view === 'dashboard' && <Dashboard ctx={ctx} />}
+          {view === 'dashboard' && (
+            isClient
+              ? <ClientDashboard key={user?.email} ctx={ctx} />
+              : <Dashboard key={user?.email} ctx={ctx} />
+          )}
           {view === 'clients' && <ClientsSection ctx={ctx} />}
           {view === 'scans' && <ScansSection ctx={ctx} />}
           {view === 'findings' && <FindingsSection ctx={ctx} />}
@@ -878,7 +1125,7 @@ function sectorLabel(sector: string) {
 }
 
 function Dashboard({ ctx }: { ctx: any }) {
-  const { api, token, clients, setClients, scans, setScans, audit, setAudit, setView, canManage } = ctx
+  const { api, token, clients, setClients, scans, setScans, audit, setAudit, setView, canManage, user } = ctx
     const [stats, setStats] = useState<any>({})
     const [alerts, setAlerts] = useState<any[]>([])
     const [monitors, setMonitors] = useState<any[]>([])
@@ -924,10 +1171,62 @@ function Dashboard({ ctx }: { ctx: any }) {
       }
     }
 
-    useEffect(() => { load() }, [token])
+    // Re-run if the loaded profile changes (e.g. a persona switch), not just
+    // when the token string changes: a client must never inherit an analyst's
+    // /audit request from the previous session.
+    useEffect(() => { load() }, [token, user?.role])
 
     const openAlerts = alerts.filter((a: any) => a.status === 'open')
     const activeMonitors = monitors.filter((m: any) => m.is_active)
+
+    // The dashboard is deliberately role-shaped. A client sees their own
+    // posture (and is told so); an analyst gets the review queue; an admin
+    // gets platform governance. Same data plane, different job.
+    const role = user?.role
+    const isAdmin = role === 'admin'
+    const isAnalyst = role === 'analyst'
+    const isClient = role === 'client'
+    const org = isClient ? clients[0] : null
+    const isClub = isClient && org?.sector === 'sports'
+    const workspaceLabel = isAdmin
+      ? 'Admin workspace'
+      : isAnalyst
+        ? 'Analyst workspace'
+        : isClub
+          ? 'Club portal'
+          : 'Client portal'
+    const scopeLabel = isAdmin ? 'Entire platform' : isAnalyst ? 'All clients' : org?.name || 'Your organization'
+    const dashboardTitle = isAdmin
+      ? 'Platform overview'
+      : isAnalyst
+        ? 'Operations overview'
+        : isClub
+          ? 'Club security posture'
+          : 'Your security posture'
+    const subtitle = isAdmin
+      ? 'Platform-wide posture across every client, scan, monitor and code review.'
+      : isAnalyst
+        ? 'Operations queue across all clients: findings to review, scans, and live alerts.'
+        : `Your security posture across scans, monitoring and code review${org ? ` for ${org.name}` : ''}. You only see your own data.`
+    const reviewCount = scans.reduce((acc: number, s: any) => acc + (s.summary?.requires_human_review || 0), 0)
+    const reviewScans = scans.filter((s: any) => (s.summary?.requires_human_review || 0) > 0)
+
+    const header = (
+      <div style={styles.dashHead}>
+        <div style={{ minWidth: 0 }}>
+          <div style={styles.roleEyebrow}>
+            <span style={styles.roleDot} aria-hidden="true" />
+            {workspaceLabel}
+          </div>
+          <h1 style={styles.dashTitle}>{dashboardTitle}</h1>
+          <p style={styles.dashSub}>{subtitle}</p>
+        </div>
+        <div style={styles.scopeChip} title="Data visible to this account">
+          <span style={styles.scopeChipLabel}>Scope</span>
+          <span style={styles.scopeChipValue}>{scopeLabel}</span>
+        </div>
+      </div>
+    )
 
     // Four primary risk indicators first; activity counts are secondary.
     const primary = (
@@ -946,13 +1245,31 @@ function Dashboard({ ctx }: { ctx: any }) {
           tone={openAlerts.length > 0 ? 'warning' : 'success'}
           hint={openAlerts.length > 0 ? 'Needs triage' : 'All clear'}
         />
-        <StatCard
-          emphasis
-          label="Code issues"
-          value={codeIssues}
-          tone={codeIssues > 0 ? 'warning' : 'success'}
-          hint="Across code scans"
-        />
+        {isAdmin ? (
+          <StatCard
+            emphasis
+            label="Clients protected"
+            value={clients.length}
+            tone="neutral"
+            hint="Across the platform"
+          />
+        ) : isAnalyst ? (
+          <StatCard
+            emphasis
+            label="Awaiting review"
+            value={reviewCount}
+            tone={reviewCount > 0 ? 'warning' : 'success'}
+            hint={reviewScans.length > 0 ? `Across ${reviewScans.length} scans` : 'Queue clear'}
+          />
+        ) : (
+          <StatCard
+            emphasis
+            label="Code issues"
+            value={codeIssues}
+            tone={codeIssues > 0 ? 'warning' : 'success'}
+            hint="Across code scans"
+          />
+        )}
         <StatCard
           emphasis
           label="Active monitors"
@@ -963,11 +1280,37 @@ function Dashboard({ ctx }: { ctx: any }) {
       </div>
     )
 
+    const rolePanel = (
+      <div style={styles.rolePanel}>
+        <div style={{ minWidth: 0 }}>
+          <div style={styles.rolePanelKicker}>
+            {isAdmin ? 'Workspace governance' : isAnalyst ? 'Review queue' : 'Your organization'}
+          </div>
+          <div style={styles.rolePanelText}>
+            {isAdmin &&
+              `${clients.length} ${clients.length === 1 ? 'client' : 'clients'} · ${stats.totalScans || 0} scans · ${monitors.length} monitors under management.`}
+            {isAnalyst &&
+              (reviewCount > 0
+                ? `${reviewCount} finding${reviewCount === 1 ? '' : 's'} awaiting a human decision across ${reviewScans.length} scan${reviewScans.length === 1 ? '' : 's'}.`
+                : 'The review queue is clear — no findings are waiting for a human decision.')}
+            {isClient &&
+              `${org?.name || 'Your organization'} · ${sectorLabel(org?.sector || 'other')}. This workspace is scoped to your own scans, findings and alerts.`}
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => setView(isAdmin ? 'admin' : isAnalyst ? 'findings' : 'clients')}
+          style={styles.darkActionBtn}
+        >
+          {isAdmin ? 'Open admin' : isAnalyst ? 'Review findings' : 'View organization'}
+        </button>
+      </div>
+    )
+
     if (loading) {
       return (
         <div style={styles.section}>
-          <h1 style={styles.pageTitle}>Dashboard</h1>
-          <p style={styles.hint}>Live posture across scanning, continuous monitoring, and AI code review.</p>
+          {header}
           <div style={styles.statGrid} role="status" aria-live="polite">
             <div style={styles.skeleton} />
             <div style={styles.skeleton} />
@@ -982,7 +1325,7 @@ function Dashboard({ ctx }: { ctx: any }) {
     if (error) {
       return (
         <div style={styles.section}>
-          <h1 style={styles.pageTitle}>Dashboard</h1>
+          {header}
           <div style={styles.lightCard}>
             <h3 style={styles.h3}>Could not load the dashboard</h3>
             <p style={{ ...styles.hint, marginBottom: '1rem' }}>{error}</p>
@@ -994,18 +1337,19 @@ function Dashboard({ ctx }: { ctx: any }) {
 
     return (
       <div style={styles.section}>
-        <h1 style={styles.pageTitle}>Dashboard</h1>
-        <p style={styles.hint}>
-          Live posture across scanning, continuous monitoring, and AI code review.
-        </p>
+        {header}
         {primary}
 
         <div style={styles.metricStrip} className="metric-strip">
           <Metric label="Total scans" value={stats.totalScans || 0} />
           <Metric label="High findings" value={stats.high || 0} />
-          <Metric label="Clients" value={clients.length} />
+          {isAdmin && <Metric label="Clients" value={clients.length} />}
+          {isAnalyst && <Metric label="Awaiting review" value={reviewCount} />}
+          {isClient && <Metric label="Code issues" value={codeIssues} />}
           <Metric label="Monitors" value={monitors.length} />
         </div>
+
+        {rolePanel}
 
         <div style={styles.split}>
           <div style={styles.panelDark}>
@@ -1019,7 +1363,7 @@ function Dashboard({ ctx }: { ctx: any }) {
               {scans.slice(0, 6).map((s: any) => (
                 <div key={s.id} style={styles.auditRow}>
                   <div>
-                    <strong style={{ color: '#f5f5f7' }}>{s.client?.name || '-'}</strong>
+                    <strong style={{ color: 'var(--c-text)' }}>{s.client?.name || '-'}</strong>
                     <span style={styles.listRowSub}> · {s.scan_type}</span>
                   </div>
                   <Badge tone={s.status === 'completed' ? 'success' : 'warning'}>{s.status}</Badge>
@@ -1047,7 +1391,7 @@ function Dashboard({ ctx }: { ctx: any }) {
               {openAlerts.slice(0, 6).map((a: any) => (
                 <div key={a.id} style={styles.auditRow}>
                   <div>
-                    <strong style={{ color: '#f5f5f7' }}>{a.title}</strong>
+                    <strong style={{ color: 'var(--c-text)' }}>{a.title}</strong>
                     <span style={styles.listRowSub}> · {a.severity}</span>
                   </div>
                   <Badge tone={severityTone(a.severity)}>{a.status}</Badge>
@@ -1070,7 +1414,7 @@ function Dashboard({ ctx }: { ctx: any }) {
               {audit.map((a: any) => (
                 <div key={a.id} style={styles.auditRow}>
                   <div>
-                    <strong style={{ color: '#f5f5f7' }}>{a.action}</strong>
+                    <strong style={{ color: 'var(--c-text)' }}>{a.action}</strong>
                     <span style={styles.listRowSub}> · {a.resource_type} #{a.resource_id}</span>
                   </div>
                   <span style={styles.listRowSub}>{new Date(a.created_at).toLocaleString()}</span>
@@ -1083,6 +1427,181 @@ function Dashboard({ ctx }: { ctx: any }) {
       </div>
     )
   }
+
+// ============================================================
+// CLIENT DASHBOARD — a genuinely distinct portal, not the operator
+// dashboard with buttons hidden. A client reads results (findings, alerts,
+// compliance posture); it never sees the operator stat grid, "Recent
+// Scans"/"Review findings"/"Open admin" affordances, since those are
+// tooling a client never configures. Same already-scoped API calls as the
+// operator Dashboard, reshaped presentation only.
+// ============================================================
+function ClientDashboard({ ctx }: { ctx: any }) {
+  const { api, token, clients, setClients, scans, setScans, alerts, setAlerts, setView, user } = ctx
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [compliance, setCompliance] = useState<any>(null)
+
+  const load = async () => {
+    setLoading(true)
+    setError('')
+    try {
+      const [scansData, clientsData, alertsData] = await Promise.all([
+        api('/scans'),
+        api('/clients'),
+        api('/alerts'),
+      ])
+      setScans(Array.isArray(scansData) ? scansData : [])
+      setClients(Array.isArray(clientsData) ? clientsData : [])
+      setAlerts(Array.isArray(alertsData) ? alertsData : [])
+    } catch (e: any) {
+      setError(e.message || 'Could not load your dashboard')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Re-run on a persona switch, not just a token change -- same reasoning
+  // as the operator Dashboard.
+  useEffect(() => { load() }, [token, user?.role])
+
+  const org = clients[0]
+  const isClub = org?.sector === 'sports'
+  const workspaceLabel = isClub ? 'Club portal' : 'Client portal'
+  const dashboardTitle = isClub ? 'Club security posture' : 'Your security posture'
+
+  const findings = scans.flatMap((s: any) => s.findings || [])
+  const openFindings = findings.filter((f: any) => f.status !== 'fixed' && f.status !== 'false_positive')
+  const severityCounts = {
+    critical: openFindings.filter((f: any) => f.severity === 'critical').length,
+    high: openFindings.filter((f: any) => f.severity === 'high').length,
+    medium: openFindings.filter((f: any) => f.severity === 'medium').length,
+    low: openFindings.filter((f: any) => f.severity === 'low').length,
+  }
+  const openAlerts = alerts.filter((a: any) => a.status === 'open')
+  const hasCritical = severityCounts.critical > 0
+  const lastChecked = scans.length
+    ? new Date(
+        Math.max(...scans.map((s: any) => new Date(s.completed_at || s.created_at || s.started_at || 0).getTime()))
+      ).toLocaleDateString()
+    : null
+
+  // A lightweight read of the same compliance/summary endpoint the operator
+  // Compliance page uses, scoped to this org's own findings and sector --
+  // just enough to show the sector pack name and whether reporting is
+  // required, without sending the client into the operator's mapping tool.
+  useEffect(() => {
+    if (!org || loading) return
+    const params = new URLSearchParams({
+      total_findings: String(openFindings.length),
+      critical: String(severityCounts.critical),
+      high: String(severityCounts.high),
+      medium: String(severityCounts.medium),
+      client_sector: org.sector || 'other',
+    })
+    api(`/compliance/summary?${params.toString()}`).then(setCompliance).catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [org?.id, loading, openFindings.length, severityCounts.critical, severityCounts.high, severityCounts.medium])
+
+  const header = (
+    <div style={styles.dashHead}>
+      <div style={{ minWidth: 0 }}>
+        <div style={styles.roleEyebrow}>
+          <span style={styles.roleDot} aria-hidden="true" />
+          {workspaceLabel}
+        </div>
+        <h1 style={styles.dashTitle}>{dashboardTitle}</h1>
+      </div>
+    </div>
+  )
+
+  if (loading) {
+    return (
+      <div style={styles.section}>
+        {header}
+        <div style={styles.skeleton} role="status" aria-live="polite">
+          <span className="sr-only">Loading your dashboard</span>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div style={styles.section}>
+        {header}
+        <div style={styles.lightCard}>
+          <h3 style={styles.h3}>Could not load your dashboard</h3>
+          <p style={{ ...styles.hint, marginBottom: '1rem' }}>{error}</p>
+          <button type="button" onClick={load} style={styles.button}>Try again</button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div style={styles.section}>
+      {header}
+
+      {/* The headline of the page: one plain-language posture statement,
+          not a stat grid. */}
+      <div style={{ ...styles.postureBanner, ...(hasCritical ? styles.postureBannerWarning : styles.postureBannerSuccess) }}>
+        <div style={styles.postureHeadline}>
+          {hasCritical
+            ? `${severityCounts.critical} critical finding${severityCounts.critical === 1 ? '' : 's'} need${severityCounts.critical === 1 ? 's' : ''} your attention`
+            : `No critical issues${lastChecked ? ` — last checked ${lastChecked}` : ''}`}
+        </div>
+        <p style={styles.postureSub}>
+          {org?.name || 'Your organization'} · {sectorLabel(org?.sector || 'other')}. This workspace only ever shows
+          your own scans, findings and alerts.
+        </p>
+      </div>
+
+      <div style={styles.narrativeGrid}>
+        <div style={styles.narrativeCard}>
+          <h3 style={styles.panelTitle}>Findings</h3>
+          <div style={styles.narrativeValue}>{openFindings.length}</div>
+          <div style={styles.hint}>open finding{openFindings.length === 1 ? '' : 's'}</div>
+          <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', margin: '0.85rem 0' }}>
+            {severityCounts.critical > 0 && <Badge tone="danger">{severityCounts.critical} critical</Badge>}
+            {severityCounts.high > 0 && <Badge tone="warning">{severityCounts.high} high</Badge>}
+            {severityCounts.medium > 0 && <Badge tone="accent">{severityCounts.medium} medium</Badge>}
+            {severityCounts.low > 0 && <Badge tone="neutral">{severityCounts.low} low</Badge>}
+            {openFindings.length === 0 && <Badge tone="success">All clear</Badge>}
+          </div>
+          <button type="button" onClick={() => setView('findings')} style={styles.darkActionBtn}>View findings</button>
+        </div>
+
+        <div style={styles.narrativeCard}>
+          <h3 style={styles.panelTitle}>Alerts</h3>
+          <div style={styles.narrativeValue}>{openAlerts.length}</div>
+          <div style={styles.hint}>open alert{openAlerts.length === 1 ? '' : 's'}</div>
+          <div style={{ margin: '0.85rem 0' }}>
+            <Badge tone={openAlerts.length > 0 ? 'warning' : 'success'}>
+              {openAlerts.length > 0 ? 'Needs triage' : 'All clear'}
+            </Badge>
+          </div>
+          <button type="button" onClick={() => setView('alerts')} style={styles.darkActionBtn}>View alerts</button>
+        </div>
+
+        <div style={styles.narrativeCard}>
+          <h3 style={styles.panelTitle}>Compliance</h3>
+          <div style={styles.narrativeValue}>{compliance?.sector_pack?.label || sectorLabel(org?.sector || 'other')}</div>
+          <div style={styles.hint}>
+            {compliance
+              ? compliance.reporting_required
+                ? 'Incident reporting required for your sector'
+                : 'No mandatory incident reporting flagged'
+              : 'Loading your obligations…'}
+          </div>
+          <div style={{ marginTop: '0.85rem' }}>
+            <button type="button" onClick={() => setView('compliance')} style={styles.darkActionBtn}>View compliance</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 // ============================================================
 // CLIENTS
@@ -1115,6 +1634,13 @@ function ClientsSection({ ctx }: { ctx: any }) {
     useEffect(() => {
       loadClients().finally(() => setLoading(false))
     }, [token])
+
+    // A client portal only ever has one organization, and an operator should
+    // not stare at an empty detail pane on first load. Select the first row
+    // once the list arrives (the scopes request below then fills the detail).
+    useEffect(() => {
+      if (selectedId == null && clients.length > 0) setSelectedId(clients[0].id)
+    }, [clients, selectedId])
 
     const loadScopes = async (clientId: any) => {
       try {
@@ -1236,8 +1762,12 @@ function ClientsSection({ ctx }: { ctx: any }) {
 
     return (
       <div style={styles.section}>
-        <h1 style={styles.pageTitle}>Clients</h1>
-        <p style={styles.hint}>Onboard clients, then register the domains, IPs, and URLs they have authorised you to assess.</p>
+        <h1 style={styles.pageTitle}>{canManage ? 'Clients' : 'Organization'}</h1>
+        <p style={styles.hint}>
+          {canManage
+            ? 'Onboard clients, then register the domains, IPs, and URLs they have authorised you to assess.'
+            : 'Your organization profile and the domains, IPs, and URLs authorized for assessment.'}
+        </p>
 
         {showAdd && (
           <Modal title="Add client" onClose={() => setShowAdd(false)}>
@@ -1338,7 +1868,7 @@ function ClientsSection({ ctx }: { ctx: any }) {
         )}
 
         <SplitPanel
-          title="All Clients"
+          title={canManage ? 'All Clients' : 'Your organization'}
           loading={loading}
           action={canManage ? (
             <button type="button" onClick={() => setShowAdd(true)} style={styles.darkActionBtn}>+ Add client</button>
@@ -1346,12 +1876,12 @@ function ClientsSection({ ctx }: { ctx: any }) {
           items={clients}
           selectedId={selectedId}
           onSelect={(c) => setSelectedId(c.id)}
-          emptyLabel="No clients yet."
-          emptyHint="Add a client to start registering scan scopes."
+          emptyLabel={canManage ? 'No clients yet.' : 'No organization found.'}
+          emptyHint={canManage ? 'Add a client to start registering scan scopes.' : 'Contact your Ultorn administrator if this looks wrong.'}
           renderRow={(c) => (
             <>
               <div style={styles.listRowMain}>
-                <div style={styles.listRowTitle}>{c.name}</div>
+                <div className="list-row-title" style={styles.listRowTitle}>{c.name}</div>
                 <div style={styles.listRowSub}>{c.contact_email || 'No contact email'}</div>
               </div>
               <Badge tone={c.is_active ? 'success' : 'neutral'}>{c.is_active ? 'Active' : 'Inactive'}</Badge>
@@ -1378,7 +1908,7 @@ function ClientsSection({ ctx }: { ctx: any }) {
                     {c.is_active ? 'Deactivate' : 'Reactivate'}
                   </button>
                   {isAdmin && (
-                    <button type="button" onClick={() => setPendingDeleteClient(c)} style={{ ...styles.darkActionBtn, background: 'rgba(248,113,113,0.16)', color: '#fca5a5' }}>
+                    <button type="button" onClick={() => setPendingDeleteClient(c)} style={{ ...styles.darkActionBtn, background: 'var(--c-danger-soft)', color: 'var(--c-danger)' }}>
                       Delete
                     </button>
                   )}
@@ -1404,7 +1934,7 @@ function ClientsSection({ ctx }: { ctx: any }) {
                         <button
                           type="button"
                           onClick={() => setPendingDeleteScope(s)}
-                          style={{ ...styles.buttonSmall, background: 'rgba(248,113,113,0.14)', color: '#fca5a5', borderColor: 'rgba(248,113,113,0.3)' }}
+                          style={{ ...styles.buttonSmall, background: 'var(--c-danger-soft)', color: 'var(--c-danger)', borderColor: 'var(--c-danger-border)' }}
                         >
                           Remove
                         </button>
@@ -1416,15 +1946,16 @@ function ClientsSection({ ctx }: { ctx: any }) {
                   <form onSubmit={addScope} style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem', flexWrap: 'wrap' }}>
                     <input
                       aria-label="Scope target (domain, IP, or URL)"
+                      placeholder="domain, IP, or URL"
                       value={newScope.target}
                       onChange={(e) => setNewScope({ ...newScope, target: e.target.value })}
-                      style={{ ...styles.input, flex: '1 1 200px', background: 'rgba(255,255,255,0.07)', color: '#f5f5f7', border: '1px solid rgba(255,255,255,0.18)' }}
+                      style={{ ...styles.input, flex: '1 1 200px', background: 'var(--c-field-strong)', color: 'var(--c-text)', border: '1px solid var(--c-border-strong)' }}
                     />
                     <select
                       aria-label="Scope type"
                       value={newScope.target_type}
                       onChange={(e) => setNewScope({ ...newScope, target_type: e.target.value })}
-                      style={{ ...styles.inputSmall, background: 'rgba(255,255,255,0.07)', color: '#f5f5f7', border: '1px solid rgba(255,255,255,0.18)' }}
+                      style={{ ...styles.inputSmall, background: 'var(--c-field-strong)', color: 'var(--c-text)', border: '1px solid var(--c-border-strong)' }}
                     >
                       <option value="domain">Domain</option>
                       <option value="ip">IP</option>
@@ -1488,6 +2019,12 @@ function ScansSection({ ctx }: { ctx: any }) {
         .finally(() => setLoading(false))
     }, [token])
 
+    useEffect(() => {
+      if (selectedId != null || scans.length === 0) return
+      const first = scans.find((s: any) => s.status === 'completed') || scans[0]
+      setSelectedId(first.id)
+    }, [scans, selectedId])
+
     const startScan = async (e: any) => {
       e.preventDefault()
       setSubmitting(true)
@@ -1520,7 +2057,9 @@ function ScansSection({ ctx }: { ctx: any }) {
       <div style={styles.section}>
         <h1 style={styles.pageTitle}>Security Assessments</h1>
         <p style={styles.hint}>
-          No verification gate. Scans run on all in-scope targets immediately. Full data extraction: banners, headers, page content, body.
+          {canManage
+            ? 'No verification gate. Scans run on all in-scope targets immediately. Full data extraction: banners, headers, page content, body.'
+            : 'Assessments run against the domains, IPs, and URLs your organization has authorized. Findings are filed for analyst review.'}
         </p>
 
         {showStart && (
@@ -1558,7 +2097,7 @@ function ScansSection({ ctx }: { ctx: any }) {
           renderRow={(s) => (
             <>
               <div style={styles.listRowMain}>
-                <div style={styles.listRowTitle}>{s.client?.name || '-'}</div>
+                <div className="list-row-title" style={styles.listRowTitle}>{s.client?.name || '-'}</div>
                 <div style={styles.listRowSub}>{s.scan_type}</div>
               </div>
               <Badge tone={s.status === 'completed' ? 'success' : 'warning'}>{s.status}</Badge>
@@ -1597,6 +2136,10 @@ function FindingsSection({ ctx }: { ctx: any }) {
       })
     }, [token])
 
+    useEffect(() => {
+      if (selectedId == null && findings.length > 0) setSelectedId(findings[0].id)
+    }, [findings, selectedId])
+
     const reviewFinding = async (id: number) => {
       try {
         await api(`/findings/${id}/review`, { method: 'POST', body: JSON.stringify({ status: reviewStatus }) })
@@ -1624,7 +2167,7 @@ function FindingsSection({ ctx }: { ctx: any }) {
           renderRow={(f) => (
             <>
               <div style={styles.listRowMain}>
-                <div style={styles.listRowTitle}>{f.title}</div>
+                <div className="list-row-title" style={styles.listRowTitle}>{f.title}</div>
                 <div style={styles.listRowSub}>{f.target}</div>
               </div>
               <Badge tone={severityTone(f.severity)}>{f.severity}</Badge>
@@ -1655,7 +2198,7 @@ function FindingsSection({ ctx }: { ctx: any }) {
                       aria-label="New status for this finding"
                       value={reviewStatus}
                       onChange={(e) => setReviewStatus(e.target.value)}
-                      style={{ ...styles.input, background: 'rgba(255,255,255,0.07)', color: '#f5f5f7', border: '1px solid rgba(255,255,255,0.18)' }}
+                      style={{ ...styles.input, background: 'var(--c-field-strong)', color: 'var(--c-text)', border: '1px solid var(--c-border-strong)' }}
                     >
                       <option value="open">Open</option>
                       <option value="fixed">Fixed</option>
@@ -1677,7 +2220,7 @@ function FindingsSection({ ctx }: { ctx: any }) {
 // AI / SOVEREIGNTY
 // ============================================================
 function AISection({ ctx }: { ctx: any }) {
-  const { api, token, notify } = ctx
+  const { api, token, notify, clients } = ctx
     const [prompt, setPrompt] = useState('')
     const [clientName, setClientName] = useState('')
     const [response, setResponse] = useState('')
@@ -1685,6 +2228,16 @@ function AISection({ ctx }: { ctx: any }) {
     const [sanitized, setSanitized] = useState('')
     const [forceLocal, setForceLocal] = useState(false)
     const [busy, setBusy] = useState(false)
+
+    // If the prompt names a client in this workspace, use that name for
+    // redaction automatically. The field stays editable for ad-hoc prompts.
+    useEffect(() => {
+      if (clientName.trim() || !prompt.trim()) return
+      const match = (clients || []).find(
+        (c: any) => c.name && prompt.toLowerCase().includes(c.name.toLowerCase())
+      )
+      if (match) setClientName(match.name)
+    }, [prompt, clients, clientName])
 
     const queryAI = async () => {
       if (!prompt.trim()) return
@@ -1720,8 +2273,8 @@ function AISection({ ctx }: { ctx: any }) {
       <div style={styles.section}>
         <h1 style={styles.pageTitle}>AI Guard: Sovereignty Layer</h1>
         <p style={styles.hint}>
-          Prompts are sanitized (client names, IPs, credentials, PII stripped) before reaching any external model.
-          Sensitive data stays local. Every query is immutably logged.
+          Prompts are sanitized before reaching any external model: IPs, credentials, and PII are stripped,
+          and known client names are redacted automatically. Sensitive data stays local. Every query is immutably logged.
         </p>
 
         <div style={styles.lightCard}>
@@ -1734,7 +2287,7 @@ function AISection({ ctx }: { ctx: any }) {
             <Textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              placeholder="e.g. 'Analyze this vulnerability report for client Acme Corp at 10.0.0.5 with API key sk-12345'"
+              placeholder="e.g. 'Review Acme Corp at 10.0.0.5 with API key sk-live-9f8a7b6c'"
               rows={4}
               style={{ minHeight: 'unset' }}
             />
@@ -1796,6 +2349,10 @@ function AuditSection({ ctx }: { ctx: any }) {
       api('/audit').then((data: any) => setAudit(data))
     }, [token])
 
+    useEffect(() => {
+      if (selectedId == null && audit.length > 0) setSelectedId(audit[0].id)
+    }, [audit, selectedId])
+
     return (
       <div style={styles.section}>
         <h1 style={styles.pageTitle}>Immutable Audit Log</h1>
@@ -1812,7 +2369,7 @@ function AuditSection({ ctx }: { ctx: any }) {
           renderRow={(a) => (
             <>
               <div style={styles.listRowMain}>
-                <div style={styles.listRowTitle}>{a.action}</div>
+                <div className="list-row-title" style={styles.listRowTitle}>{a.action}</div>
                 <div style={styles.listRowSub}>{a.user_email || 'system'}</div>
               </div>
               <span style={styles.listRowSub}>{new Date(a.created_at).toLocaleDateString()}</span>
@@ -1870,6 +2427,10 @@ function AdminSection({ ctx }: { ctx: any }) {
         .catch((e: any) => notify(e.message || 'Could not load admin data', 'error'))
         .finally(() => setLoading(false))
     }, [token])
+
+    useEffect(() => {
+      if (selectedUserId == null && users.length > 0) setSelectedUserId(users[0].id)
+    }, [users, selectedUserId])
 
     const changeRole = async (userId: number, role: string) => {
       try {
@@ -1976,7 +2537,7 @@ function AdminSection({ ctx }: { ctx: any }) {
           renderRow={(u) => (
             <>
               <div style={styles.listRowMain}>
-                <div style={styles.listRowTitle}>{u.email}</div>
+                <div className="list-row-title" style={styles.listRowTitle}>{u.email}</div>
                 <div style={styles.listRowSub}>{u.full_name || '-'}</div>
               </div>
               <Badge tone={u.is_active ? 'success' : 'danger'}>{u.is_active ? 'Active' : 'Disabled'}</Badge>
@@ -1991,7 +2552,7 @@ function AdminSection({ ctx }: { ctx: any }) {
                 aria-label={`Role for ${u.email}`}
                 value={u.role}
                 onChange={(e) => changeRole(u.id, e.target.value)}
-                style={{ ...styles.input, background: 'rgba(255,255,255,0.07)', color: '#f5f5f7', border: '1px solid rgba(255,255,255,0.18)' }}
+                style={{ ...styles.input, background: 'var(--c-field-strong)', color: 'var(--c-text)', border: '1px solid var(--c-border-strong)' }}
               >
                 <option value="admin">Admin</option>
                 <option value="analyst">Analyst</option>
@@ -2026,7 +2587,7 @@ function AdminSection({ ctx }: { ctx: any }) {
             <h3 style={styles.panelTitle}>API Keys</h3>
             <button type="button" onClick={() => { setMintedKey(null); setShowCreate(true) }} style={styles.darkActionBtn}>+ Create key</button>
           </div>
-          <p style={{ ...styles.hint, padding: '0 1.25rem', color: 'rgba(255,255,255,0.68)' }}>
+          <p style={{ ...styles.hint, padding: '0 1.25rem', color: 'var(--c-text-dim)' }}>
             Keys authenticate programmatic access via the <code>X-API-Key</code> header, scoped to the admin account that minted them.
           </p>
 
@@ -2036,7 +2597,7 @@ function AdminSection({ ctx }: { ctx: any }) {
                 <>
                   <div style={styles.codeBlock}>
                     {mintedKey}
-                    <div style={{ color: '#fcd34d', marginTop: '0.5rem', fontFamily: 'inherit' }}>Copy this now. It will not be shown again.</div>
+                    <div style={{ color: 'var(--c-warn)', marginTop: '0.5rem', fontFamily: 'inherit' }}>Copy this now. It will not be shown again.</div>
                   </div>
                   <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                     <Button
@@ -2063,7 +2624,7 @@ function AdminSection({ ctx }: { ctx: any }) {
             {apiKeys.map((k: any) => (
               <div key={k.id} style={styles.auditRow}>
                 <div>
-                  <strong style={{ color: '#f5f5f7' }}>{k.name}</strong>
+                  <strong style={{ color: 'var(--c-text)' }}>{k.name}</strong>
                   <span style={styles.listRowSub}> · {k.key_prefix}… · owner #{k.owner_id}</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
@@ -2081,7 +2642,7 @@ function AdminSection({ ctx }: { ctx: any }) {
           <Modal title="Create user" onClose={() => { if (!creatingUser) setShowCreateUser(false) }}>
             <form onSubmit={createUser}>
               {createUserError && (
-                <div role="alert" style={{ color: '#fca5a5', fontSize: '0.82rem', marginBottom: '0.8rem' }}>
+                <div role="alert" style={{ color: 'var(--c-danger)', fontSize: '0.82rem', marginBottom: '0.8rem' }}>
                   {createUserError}
                 </div>
               )}
@@ -2130,12 +2691,12 @@ function AdminSection({ ctx }: { ctx: any }) {
           <Modal title={`Reset password for ${resetUser.email}`} onClose={closeReset}>
             {temporaryPassword ? (
               <>
-                <p style={{ color: 'rgba(255,255,255,0.72)', fontSize: '0.85rem', marginTop: 0 }}>
+                <p style={{ color: 'var(--c-text-soft)', fontSize: '0.85rem', marginTop: 0 }}>
                   Share this temporary password securely. The user should change it after signing in.
                 </p>
                 <div style={styles.codeBlock}>
                   {temporaryPassword}
-                  <div style={{ color: '#fcd34d', marginTop: '0.5rem', fontFamily: 'inherit' }}>
+                  <div style={{ color: 'var(--c-warn)', marginTop: '0.5rem', fontFamily: 'inherit' }}>
                     This will not be shown again.
                   </div>
                 </div>
@@ -2153,11 +2714,11 @@ function AdminSection({ ctx }: { ctx: any }) {
               </>
             ) : (
               <>
-                <p style={{ color: 'rgba(255,255,255,0.72)', fontSize: '0.85rem', marginTop: 0 }}>
+                <p style={{ color: 'var(--c-text-soft)', fontSize: '0.85rem', marginTop: 0 }}>
                   This replaces the user&apos;s current password immediately. Their existing session may stay active until it expires.
                 </p>
                 {resetError && (
-                  <div role="alert" style={{ color: '#fca5a5', fontSize: '0.82rem', marginBottom: '0.8rem' }}>
+                  <div role="alert" style={{ color: 'var(--c-danger)', fontSize: '0.82rem', marginBottom: '0.8rem' }}>
                     {resetError}
                   </div>
                 )}
@@ -2210,6 +2771,16 @@ function MonitorsSection({ ctx }: { ctx: any }) {
         .catch((e: any) => notify(e.message || 'Could not load monitors', 'error'))
         .finally(() => setLoading(false))
     }, [token])
+
+    useEffect(() => {
+      if (selectedId != null || monitors.length === 0) return
+      const first = monitors[0]
+      setSelectedId(first.id)
+      setMonitorAlerts([])
+      api(`/monitors/${first.id}/alerts`)
+        .then((d: any) => setMonitorAlerts(Array.isArray(d) ? d : []))
+        .catch((e: any) => notify(e.message || 'Could not load monitor alerts', 'error'))
+    }, [monitors, selectedId])
 
     const refreshMonitors = async () => {
       try {
@@ -2363,7 +2934,7 @@ function MonitorsSection({ ctx }: { ctx: any }) {
           renderRow={(m) => (
             <>
               <div style={styles.listRowMain}>
-                <div style={styles.listRowTitle}>{m.target}</div>
+                <div className="list-row-title" style={styles.listRowTitle}>{m.target}</div>
                 <div style={styles.listRowSub}>{m.monitor_type}</div>
               </div>
               <Badge tone={m.is_active ? 'success' : 'neutral'}>{m.is_active ? 'Active' : 'Inactive'}</Badge>
@@ -2492,13 +3063,18 @@ function AlertsSection({ ctx }: { ctx: any }) {
       <div style={styles.section}>
         <h1 style={styles.pageTitle}>Monitoring Alerts</h1>
         <p style={styles.hint}>
-          {openCount > 0
-            ? `${openCount} open alert${openCount === 1 ? '' : 's'} need review. Acknowledge to claim one, resolve when fixed.`
-            : 'No open alerts right now. Acknowledge and resolve each alert as it arrives.'}
+          {canManage
+            ? openCount > 0
+              ? `${openCount} open alert${openCount === 1 ? '' : 's'} need review. Acknowledge to claim one, resolve when fixed.`
+              : 'No open alerts right now. Acknowledge and resolve each alert as it arrives.'
+            : openCount > 0
+              ? `${openCount} open alert${openCount === 1 ? '' : 's'} on your account. Your Ultorn analyst will review ${openCount === 1 ? 'it' : 'them'}.`
+              : 'No open alerts on your account right now.'}
         </p>
 
         <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
           <select
+            className="alerts-filter"
             aria-label="Filter alerts by status"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
@@ -2511,6 +3087,7 @@ function AlertsSection({ ctx }: { ctx: any }) {
             <option value="false_positive">False positive</option>
           </select>
           <select
+            className="alerts-filter"
             aria-label="Filter alerts by severity"
             value={severityFilter}
             onChange={(e) => setSeverityFilter(e.target.value)}
@@ -2526,10 +3103,10 @@ function AlertsSection({ ctx }: { ctx: any }) {
 
         <div style={styles.lightCard}>
           <div style={styles.tableWrap}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 620 }}>
+            <table className="responsive-table" style={{ width: '100%', borderCollapse: 'collapse', minWidth: 620 }}>
               <caption className="sr-only">Monitoring alerts with severity, status, and time detected</caption>
             <thead>
-              <tr style={{ textAlign: 'left', borderBottom: '1px solid rgba(0,0,0,0.1)' }}>
+              <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--c-border)' }}>
                 <th scope="col" style={styles.th}>Alert</th>
                 <th scope="col" style={styles.th}>Severity</th>
                 <th scope="col" style={styles.th}>Status</th>
@@ -2550,14 +3127,14 @@ function AlertsSection({ ctx }: { ctx: any }) {
               )}
               {alerts.map((a: any) => (
                 <tr key={a.id} style={{ borderBottom: `1px solid ${BORDER}` }}>
-                  <td style={styles.td}>
+                  <td className="responsive-primary" style={styles.td}>
                     <div>{a.title}</div>
                     {a.description && <div style={{ fontSize: '0.78rem', color: TEXT_DIM }}>{a.description}</div>}
                   </td>
-                  <td style={styles.td}><Badge tone={severityTone(a.severity)}>{a.severity}</Badge></td>
-                  <td style={styles.td}>{a.status.replace('_', ' ')}</td>
-                  <td style={{ ...styles.td, fontSize: '0.8rem', color: TEXT_FAINT }}>{new Date(a.created_at).toLocaleString()}</td>
-                  <td style={{ ...styles.td, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                  <td data-label="Severity" style={styles.td}><Badge tone={severityTone(a.severity)}>{a.severity}</Badge></td>
+                  <td data-label="Status" style={styles.td}>{a.status.replace('_', ' ')}</td>
+                  <td data-label="Detected" style={{ ...styles.td, fontSize: '0.8rem', color: TEXT_FAINT }}>{new Date(a.created_at).toLocaleString()}</td>
+                  <td className="responsive-actions" style={{ ...styles.td, textAlign: 'right', whiteSpace: 'nowrap' }}>
                     {canManage && a.status === 'open' && (
                       <button
                         type="button"
@@ -2704,17 +3281,23 @@ function SchedulesSection({ ctx }: { ctx: any }) {
     }
 
     const humanInterval = (minutes: number) => {
-      if (minutes % 1440 === 0) return `${minutes / 1440} day(s)`
-      if (minutes % 60 === 0) return `${minutes / 60} hour(s)`
-      return `${minutes} min`
+      if (minutes === 60) return 'Every hour'
+      if (minutes === 360) return 'Every 6 hours'
+      if (minutes === 1440) return 'Daily'
+      if (minutes === 10080) return 'Weekly'
+      if (minutes === 43200) return 'Monthly'
+      if (minutes % 1440 === 0) return `Every ${minutes / 1440} days`
+      if (minutes % 60 === 0) return `Every ${minutes / 60} hours`
+      return `Every ${minutes} minutes`
     }
 
     return (
       <div style={styles.section}>
         <h1 style={styles.pageTitle}>Recurring Scans</h1>
         <p style={styles.hint}>
-          Schedule vulnerability assessments to run automatically. Each run uses the client's
-          current non-excluded scopes and files findings for human review.
+          {canManage
+            ? "Schedule vulnerability assessments to run automatically. Each run uses the client's current non-excluded scopes and files findings for human review."
+            : 'See the recurring assessments configured for your organization. Each run uses your current non-excluded scopes and files findings for review.'}
         </p>
 
         {canManage && (
@@ -2760,35 +3343,36 @@ function SchedulesSection({ ctx }: { ctx: any }) {
         <div style={{ ...styles.lightCard, marginTop: '1rem' }}>
           <h3 style={styles.h3}>Schedules</h3>
           <div style={styles.tableWrap}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 680 }}>
+            <table className="responsive-table" style={{ width: '100%', borderCollapse: 'collapse', minWidth: 680 }}>
               <caption className="sr-only">Recurring scan schedules with their next run time</caption>
             <thead>
-              <tr style={{ textAlign: 'left', borderBottom: '1px solid rgba(0,0,0,0.1)' }}>
+              <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--c-border)' }}>
                 <th scope="col" style={styles.th}>Client</th>
                 <th scope="col" style={styles.th}>Type</th>
                 <th scope="col" style={styles.th}>Every</th>
                 <th scope="col" style={styles.th}>Next run</th>
+                <th scope="col" style={styles.th}>Status</th>
                 <th scope="col" style={styles.th}><span className="sr-only">Actions</span></th>
               </tr>
             </thead>
             <tbody>
               {loading && (
-                <tr><td colSpan={5} style={styles.tdEmpty} role="status">Loading schedules…</td></tr>
+                <tr><td colSpan={6} style={styles.tdEmpty} role="status">Loading schedules…</td></tr>
               )}
               {!loading && schedules.length === 0 && (
-                <tr><td colSpan={5} style={styles.tdEmpty}>No schedules yet. Create one above to run scans automatically.</td></tr>
+                <tr><td colSpan={6} style={styles.tdEmpty}>No schedules yet. Create one above to run scans automatically.</td></tr>
               )}
               {schedules.map((s: any) => (
                 editingId === s.id ? (
                   <tr key={s.id} style={{ borderBottom: `1px solid ${BORDER}` }}>
-                    <td style={styles.td}>{s.client?.name || s.client_id}</td>
-                    <td style={styles.td} colSpan={2}>
+                    <td className="responsive-primary" style={styles.td}>{s.client?.name || s.client_id}</td>
+                    <td className="responsive-form" data-label="Schedule" style={styles.td} colSpan={2}>
                       <form onSubmit={saveEdit} style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
                         <select
                           aria-label="Assessment type"
                           value={editForm.scan_type}
                           onChange={(e) => setEditForm({ ...editForm, scan_type: e.target.value })}
-                          style={{ ...styles.inputSmall, background: 'rgba(255,255,255,0.07)', color: TEXT, border: `1px solid ${BORDER_STRONG}` }}
+                          style={{ ...styles.inputSmall, background: 'var(--c-field-strong)', color: TEXT, border: `1px solid ${BORDER_STRONG}` }}
                         >
                           <option value="vulnerability">Vulnerability</option>
                           <option value="full">Full assessment</option>
@@ -2798,7 +3382,7 @@ function SchedulesSection({ ctx }: { ctx: any }) {
                           aria-label="Frequency"
                           value={editForm.interval_minutes}
                           onChange={(e) => setEditForm({ ...editForm, interval_minutes: e.target.value })}
-                          style={{ ...styles.inputSmall, background: 'rgba(255,255,255,0.07)', color: TEXT, border: `1px solid ${BORDER_STRONG}` }}
+                          style={{ ...styles.inputSmall, background: 'var(--c-field-strong)', color: TEXT, border: `1px solid ${BORDER_STRONG}` }}
                         >
                           <option value="60">Every hour</option>
                           <option value="360">Every 6 hours</option>
@@ -2810,21 +3394,26 @@ function SchedulesSection({ ctx }: { ctx: any }) {
                         <button type="button" onClick={() => setEditingId(null)} disabled={savingEdit} style={styles.buttonGhostLight}>Cancel</button>
                       </form>
                     </td>
-                    <td style={{ ...styles.td, fontSize: '0.8rem', color: TEXT_FAINT }}>
+                    <td data-label="Next run" style={{ ...styles.td, fontSize: '0.8rem', color: TEXT_FAINT }}>
                       {s.next_run ? new Date(s.next_run).toLocaleString() : '—'}
                     </td>
-                    <td />
+                    <td data-label="Status" style={styles.td}>
+                      <Badge tone={s.is_active ? 'success' : 'neutral'}>{s.is_active ? 'Active' : 'Paused'}</Badge>
+                    </td>
+                    <td className="responsive-actions" style={{ ...styles.td, textAlign: 'right' }} />
                   </tr>
                 ) : (
                   <tr key={s.id} style={{ borderBottom: `1px solid ${BORDER}` }}>
-                    <td style={styles.td}>{s.client?.name || s.client_id}</td>
-                    <td style={styles.td}>{s.scan_type}</td>
-                    <td style={styles.td}>{humanInterval(s.interval_minutes)}</td>
-                    <td style={{ ...styles.td, fontSize: '0.8rem', color: TEXT_FAINT }}>
+                    <td className="responsive-primary" style={styles.td}>{s.client?.name || s.client_id}</td>
+                    <td data-label="Type" style={styles.td}>{s.scan_type}</td>
+                    <td data-label="Every" style={styles.td}>{humanInterval(s.interval_minutes)}</td>
+                    <td data-label="Next run" style={{ ...styles.td, fontSize: '0.8rem', color: TEXT_FAINT }}>
                       {s.next_run ? new Date(s.next_run).toLocaleString() : '—'}
                     </td>
-                    <td style={{ ...styles.td, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                    <td data-label="Status" style={styles.td}>
                       <Badge tone={s.is_active ? 'success' : 'neutral'}>{s.is_active ? 'Active' : 'Paused'}</Badge>
+                    </td>
+                    <td className="responsive-actions" style={{ ...styles.td, textAlign: 'right', whiteSpace: 'nowrap' }}>
                       {canManage && (
                         <>
                           <button type="button" onClick={() => runNow(s)} style={{ ...styles.buttonGhostLight, marginLeft: '0.4rem' }}>Run now</button>
@@ -2960,10 +3549,10 @@ function CodeScansSection({ ctx }: { ctx: any }) {
         <div style={{ ...styles.lightCard, marginTop: '1rem' }}>
           <h3 style={styles.h3}>Code Scans</h3>
           <div style={styles.tableWrap}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 620 }}>
+            <table className="responsive-table" style={{ width: '100%', borderCollapse: 'collapse', minWidth: 620 }}>
               <caption className="sr-only">Code scans and the issues found in each</caption>
             <thead>
-              <tr style={{ textAlign: 'left', borderBottom: '1px solid rgba(0,0,0,0.1)' }}>
+              <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--c-border)' }}>
                 <th scope="col" style={styles.th}>Repository</th>
                 <th scope="col" style={styles.th}>Branch</th>
                 <th scope="col" style={styles.th}>Status</th>
@@ -2980,11 +3569,11 @@ function CodeScansSection({ ctx }: { ctx: any }) {
               )}
               {codeScans.map((s: any) => (
                 <tr key={s.id} style={{ borderBottom: `1px solid ${BORDER}` }}>
-                  <td style={styles.td}>{s.repository_url || '-'}</td>
-                  <td style={styles.td}>{s.branch}</td>
-                  <td style={styles.td}><Badge tone={s.status === 'completed' ? 'success' : 'warning'}>{s.status}</Badge></td>
-                  <td style={styles.td}>{s.issues_found}</td>
-                  <td style={{ ...styles.td, textAlign: 'right' }}>
+                  <td className="responsive-primary" style={{ ...styles.td, overflowWrap: 'anywhere' }}>{s.repository_url || '-'}</td>
+                  <td data-label="Branch" style={styles.td}>{s.branch}</td>
+                  <td data-label="Status" style={styles.td}><Badge tone={s.status === 'completed' ? 'success' : 'warning'}>{s.status}</Badge></td>
+                  <td data-label="Issues" style={styles.td}>{s.issues_found}</td>
+                  <td className="responsive-actions" style={{ ...styles.td, textAlign: 'right' }}>
                     <button type="button" onClick={() => openIssues(s)} style={styles.buttonGhostLight}>
                       View issues
                     </button>
@@ -3023,7 +3612,7 @@ function CodeScansSection({ ctx }: { ctx: any }) {
 // COMPLIANCE
 // ============================================================
 function ComplianceSection({ ctx }: { ctx: any }) {
-  const { api, token, notify, clients, setClients } = ctx
+  const { api, token, notify, clients, setClients, canManage } = ctx
     const [loading, setLoading] = useState(true)
     const [selectedClientId, setSelectedClientId] = useState('')
     const [clientFindings, setClientFindings] = useState<any[]>([])
@@ -3038,6 +3627,15 @@ function ComplianceSection({ ctx }: { ctx: any }) {
         .catch((e: any) => notify(e.message || 'Could not load clients', 'error'))
         .finally(() => setLoading(false))
     }, [token])
+
+    // Start on the first available client: a client portal has exactly one,
+    // and an operator should land on real obligations rather than an empty
+    // "Select a client" state. The sector and findings then follow.
+    useEffect(() => {
+      if (!selectedClientId && clients.length > 0) {
+        setSelectedClientId(String(clients[0].id))
+      }
+    }, [clients, selectedClientId])
 
     const selectedClient = clients.find((c: any) => String(c.id) === selectedClientId)
     const effectiveSector = sectorOverride || selectedClient?.sector || 'other'
@@ -3065,6 +3663,7 @@ function ComplianceSection({ ctx }: { ctx: any }) {
       critical: clientFindings.filter((f: any) => f.severity === 'critical').length,
       high: clientFindings.filter((f: any) => f.severity === 'high').length,
       medium: clientFindings.filter((f: any) => f.severity === 'medium').length,
+      low: clientFindings.filter((f: any) => f.severity === 'low').length,
     }
 
     const runSummary = async () => {
@@ -3105,18 +3704,18 @@ function ComplianceSection({ ctx }: { ctx: any }) {
 
     return (
       <div style={styles.section}>
-        <h1 style={styles.pageTitle}>Compliance — Senegal Cyber Law 2026</h1>
+        <h1 style={styles.pageTitle}>Compliance — Bill No. 25/2026</h1>
         <p style={styles.hint}>
-          Map a client's actual findings to regulatory obligations under Senegal's new
-          cybersecurity law: National CERT, mandatory incident reporting, vulnerability
-          disclosure, local hosting, and AI governance.
+          {canManage
+            ? "Map a client's actual findings to the obligations set out in Bill No. 25/2026, passed by the National Assembly on 21 August 2026: National CERT, incident notification, vulnerability disclosure, local hosting, and AI governance. Draft mapping; not legal advice."
+            : "Map your actual findings to the obligations set out in Bill No. 25/2026, passed by the National Assembly on 21 August 2026: National CERT, incident notification, vulnerability disclosure, local hosting, and AI governance. Draft mapping; not legal advice."}
         </p>
 
         <div style={styles.lightCard}>
           <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
             <div style={{ flex: '1 1 260px' }}>
-              <Field label="Client" htmlFor="compliance-client" hint={loading ? 'Loading clients…' : undefined}>
-                <Select value={selectedClientId} onChange={(e) => setSelectedClientId(e.target.value)} disabled={loading}>
+              <Field label={canManage ? 'Client' : 'Organization'} htmlFor="compliance-client" hint={loading ? 'Loading clients…' : clients.length === 0 ? 'No clients available' : undefined}>
+                <Select value={selectedClientId} onChange={(e) => setSelectedClientId(e.target.value)} disabled={loading || clients.length === 0}>
                   <option value="">Select a client</option>
                   {clients.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </Select>
@@ -3126,7 +3725,15 @@ function ComplianceSection({ ctx }: { ctx: any }) {
               <Field
                 label="Sector"
                 htmlFor="compliance-sector"
-                hint={selectedClient?.sector ? `From ${selectedClient.name}'s profile; override here if needed` : 'This client has no sector set — set one on the Clients page, or override here'}
+                hint={
+                  !selectedClientId
+                    ? 'Choose a client to prefill its sector'
+                    : selectedClient?.sector
+                      ? canManage
+                        ? `From ${selectedClient.name}'s profile; override here if needed`
+                        : 'From your organization profile; override here if needed'
+                      : 'No sector set on this client — set one on the Clients page, or override here'
+                }
               >
                 <Select value={effectiveSector} onChange={(e) => setSectorOverride(e.target.value)} disabled={!selectedClientId}>
                   <option value="banking">Banking / Mobile Money</option>
@@ -3140,8 +3747,8 @@ function ComplianceSection({ ctx }: { ctx: any }) {
           </div>
           {selectedClientId && (
             <p style={styles.mutedText}>
-              {counts.total} finding{counts.total === 1 ? '' : 's'} across this client's scans
-              {counts.total > 0 && ` — ${counts.critical} critical, ${counts.high} high, ${counts.medium} medium`}.
+              {counts.total} finding{counts.total === 1 ? '' : 's'} across {canManage ? "this client's scans" : 'your scans'}
+              {counts.total > 0 && ` — ${counts.critical} critical, ${counts.high} high, ${counts.medium} medium${counts.low ? `, ${counts.low} low` : ''}`}.
             </p>
           )}
         </div>
@@ -3150,23 +3757,24 @@ function ComplianceSection({ ctx }: { ctx: any }) {
           <h3 style={styles.h3}>Compliance Summary</h3>
           <Button onClick={runSummary} loading={working} disabled={!selectedClientId}>Run summary</Button>
           {summary && (
-            <div style={{ marginTop: '1rem', padding: '1rem', background: SURFACE_SUNKEN, borderRadius: '12px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '1rem' }}>
+            <div style={{ marginTop: '1rem', padding: '1rem', background: SURFACE_SUNKEN, borderRadius: 0 }}>
+              <div className="responsive-stat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '1rem' }}>
                 <div><div style={styles.statLabel}>Critical Findings</div><div style={styles.statValue}>{summary.critical}</div></div>
                 <div><div style={styles.statLabel}>Reporting Required</div><div style={styles.statValue}>{summary.reporting_required ? 'Yes' : 'No'}</div></div>
-                <div><div style={styles.statLabel}>CERT Window</div><div style={styles.statValue}>{summary.cert_notification_window_hours}h</div></div>
+                <div><div style={styles.statLabel}>Notification Window</div><div style={styles.statValue}>{summary.cert_notification_window_hours}h</div></div>
               </div>
               <p style={styles.mutedText}>{summary.framework}</p>
-              <p style={styles.mutedText}>Sector: {summary.client_sector}</p>
+              <p style={styles.mutedText}>{summary.disclaimer || 'Draft mapping against Bill No. 25/2026 as passed on 21 August 2026. Confirm article references and the notification window against the published text before relying on it. Not a legal opinion.'}</p>
+              <p style={styles.mutedText}>Sector: {sectorLabel(summary.client_sector)}</p>
               <div style={styles.detailLabelLight}>Next Steps</div>
-              <ul style={{ marginLeft: '1.25rem', marginTop: '0.5rem', color: TEXT_DIM }}>
+              <ul style={{ marginLeft: '1.25rem', marginTop: '0.5rem', paddingLeft: 0, color: TEXT_DIM }}>
                 {summary.next_steps.map((s: string) => <li key={s}>{s}</li>)}
               </ul>
               {summary.sector_pack && (
                 <div style={{ marginTop: '1rem' }}>
                   <div style={styles.detailLabelLight}>Sector Guidance: {summary.sector_pack.label}</div>
                   <p style={{ ...styles.mutedText, marginTop: '0.35rem' }}>{summary.sector_pack.summary}</p>
-                  <ul style={{ marginLeft: '1.25rem', marginTop: '0.5rem', color: TEXT_DIM }}>
+                  <ul style={{ marginLeft: '1.25rem', marginTop: '0.5rem', paddingLeft: 0, color: TEXT_DIM }}>
                     {summary.sector_pack.focus_areas.map((f: any) => (
                       <li key={f.area}><strong>{f.area}</strong> — {f.why}</li>
                     ))}
@@ -3178,7 +3786,7 @@ function ComplianceSection({ ctx }: { ctx: any }) {
         </div>
 
         <div style={{ ...styles.lightCard, marginTop: '1rem' }}>
-          <h3 style={styles.h3}>Findings → Law Mapping</h3>
+          <h3 style={styles.h3}>Findings → Bill Mapping</h3>
           <Button variant="secondary" onClick={runMap} loading={working} disabled={!selectedClientId || counts.total === 0}>
             Generate mappings
           </Button>
@@ -3186,7 +3794,11 @@ function ComplianceSection({ ctx }: { ctx: any }) {
             <p style={{ ...styles.mutedText, marginTop: '0.75rem' }}>Select a client above to map their real findings.</p>
           )}
           {selectedClientId && counts.total === 0 && (
-            <p style={{ ...styles.mutedText, marginTop: '0.75rem' }}>This client has no findings yet — run a scan first.</p>
+            <p style={{ ...styles.mutedText, marginTop: '0.75rem' }}>
+              {canManage
+                ? 'This client has no findings yet — run a scan first.'
+                : 'No findings are available for your organization yet.'}
+            </p>
           )}
           {mappings.length === 0 && selectedClientId && counts.total > 0 && (
             <p style={{ ...styles.mutedText, marginTop: '0.75rem' }}>
@@ -3233,6 +3845,14 @@ function ReportsSection({ ctx }: { ctx: any }) {
       api('/scans').then((data: any) => setScans(Array.isArray(data) ? data : []))
     }, [token])
 
+    useEffect(() => {
+      if (selectedScan) return
+      const first = scans.find((s: any) => s.status === 'completed')
+      if (first) setSelectedScan(String(first.id))
+    }, [scans, selectedScan])
+
+    const completedScans = scans.filter((s: any) => s.status === 'completed')
+
     const generateReport = async (scanId: number) => {
       try {
         const res = await api(`/scans/${scanId}/report`)
@@ -3249,18 +3869,18 @@ function ReportsSection({ ctx }: { ctx: any }) {
       <div style={styles.section}>
         <h1 style={styles.pageTitle}>Reports</h1>
         <p style={styles.hint}>
-          Plain-language reports mapped to business impact and Senegal Cyber Law 2026 obligations.
+          Plain-language reports mapped to business impact and the obligations set out in Bill No. 25/2026 (passed 21 August 2026). Draft mapping; not legal advice.
         </p>
 
         <div style={styles.lightCard}>
           <h3 style={styles.h3}>Generate Report</h3>
           <div style={{ maxWidth: 420 }}>
-            <Field label="Scan" htmlFor="report-scan" hint={scans.length === 0 ? 'No completed scans to report on yet.' : undefined}>
-              <Select value={selectedScan} onChange={(e) => setSelectedScan(e.target.value)} disabled={scans.length === 0}>
-                <option value="">Select a scan</option>
-                {scans.map((s: any) => (
+            <Field label="Scan" htmlFor="report-scan" hint={completedScans.length === 0 ? 'No completed scans to report on yet.' : undefined}>
+              <Select value={selectedScan} onChange={(e) => setSelectedScan(e.target.value)} disabled={completedScans.length === 0}>
+                <option value="">Select a completed scan</option>
+                {completedScans.map((s: any) => (
                   <option key={s.id} value={s.id}>
-                    {s.client?.name} — {s.scan_type} ({s.status})
+                    {s.client?.name} — {s.scan_type}
                   </option>
                 ))}
               </Select>
@@ -3277,7 +3897,7 @@ function ReportsSection({ ctx }: { ctx: any }) {
         {report && (
           <div style={{ ...styles.lightCard, marginTop: '1rem' }}>
             <h3 style={styles.h3}>Report: Scan #{report.scan_id}</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '1rem' }}>
+            <div className="responsive-stat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '1rem' }}>
               <div><div style={styles.statLabel}>Client</div><div style={styles.statValue}>{report.client_name}</div></div>
               <div><div style={styles.statLabel}>Rating</div><div style={styles.statValue}>{report.overall_rating}</div></div>
               <div><div style={styles.statLabel}>Total Findings</div><div style={styles.statValue}>{report.findings_count.total}</div></div>
@@ -3285,20 +3905,24 @@ function ReportsSection({ ctx }: { ctx: any }) {
             <div style={styles.detailLabelLight}>Executive Summary</div>
             <p style={styles.mutedText}>{report.executive_summary}</p>
             <div style={styles.detailLabelLight}>Plain Language</div>
-            <ul style={{ marginLeft: '1.25rem', marginTop: '0.5rem', color: TEXT_DIM }}>
-              {report.plain_language.map((p: string) => <li key={p}>{p}</li>)}
+            <ul style={{ marginLeft: '1.25rem', marginTop: '0.5rem', paddingLeft: 0, color: TEXT_DIM }}>
+              {report.plain_language.map((p: string, idx: number) => <li key={`${idx}-${p}`}>{p}</li>)}
             </ul>
             <div style={styles.detailLabelLight}>Recommendations</div>
-            <ul style={{ marginLeft: '1.25rem', marginTop: '0.5rem', color: TEXT_DIM }}>
-              {report.recommendations.map((r: string) => <li key={r}>{r}</li>)}
+            <ul style={{ marginLeft: '1.25rem', marginTop: '0.5rem', paddingLeft: 0, color: TEXT_DIM }}>
+              {report.recommendations.map((r: string, idx: number) => <li key={`${idx}-${r}`}>{r}</li>)}
             </ul>
             <div style={styles.detailLabelLight}>Compliance Mappings</div>
-            <ul style={{ marginLeft: '1.25rem', marginTop: '0.5rem', color: TEXT_DIM }}>
-              {report.compliance_mappings.map((m: any) => (
-                <li key={m.law_article}>
-                  <strong>{m.law_article}:</strong> {m.action_required}
-                </li>
-              ))}
+            <ul style={{ marginLeft: '1.25rem', marginTop: '0.5rem', paddingLeft: 0, color: TEXT_DIM }}>
+              {report.compliance_mappings
+                .filter((m: any, idx: number, arr: any[]) =>
+                  arr.findIndex((x: any) => x.law_article === m.law_article && x.action_required === m.action_required) === idx
+                )
+                .map((m: any, idx: number) => (
+                  <li key={`${idx}-${m.law_article}`}>
+                    <strong>{m.law_article}:</strong> {m.action_required}
+                  </li>
+                ))}
             </ul>
           </div>
         )}
@@ -3330,7 +3954,7 @@ function ReportsSection({ ctx }: { ctx: any }) {
                 </Button>
               </div>
             </div>
-            <div style={styles.codeBlock}>{markdown}</div>
+            <div style={{ ...styles.codeBlock, maxHeight: '360px', overflowY: 'auto' }}>{markdown}</div>
           </div>
         )}
       </div>
@@ -3351,7 +3975,7 @@ const styles: any = {
     fontFamily: "'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
   },
   sidebar: {
-    background: '#0a0a0d',
+    background: 'var(--c-sidebar-bg)',
     color: TEXT,
     display: 'flex',
     flexDirection: 'column',
@@ -3359,8 +3983,8 @@ const styles: any = {
   },
   sidebarBrand: { display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '1.5rem 1.25rem 1.25rem' },
   navBrandLogo: { height: '24px', width: 'auto' },
-  navBrandDivider: { width: '1px', height: '16px', background: 'rgba(255,255,255,0.2)' },
-  sidebarBrandText: { fontWeight: '600', fontSize: '0.95rem', color: '#f5f5f7' },
+  navBrandDivider: { width: '1px', height: '16px', background: 'var(--c-border-strong)' },
+  sidebarBrandText: { fontWeight: '600', fontSize: '0.95rem', color: 'var(--c-text)' },
   sidebarNavScroll: { flex: 1, overflowY: 'auto', paddingBottom: '0.5rem' },
   sidebarNav: { display: 'flex', flexDirection: 'column', gap: '0.15rem', padding: '0.5rem 0.5rem 0.75rem' },
   sidebarGroupLabel: {
@@ -3368,40 +3992,40 @@ const styles: any = {
     fontWeight: 700,
     letterSpacing: '0.08em',
     textTransform: 'uppercase',
-    color: 'rgba(255,255,255,0.48)',
+    color: 'var(--c-sidebar-label)',
     padding: '0.6rem 0.9rem 0.3rem',
   },
   sidebarLink: {
     display: 'flex',
     alignItems: 'center',
     gap: '0.75rem',
-    color: 'rgba(255,255,255,0.6)',
+    color: 'var(--c-sidebar-link)',
     background: 'transparent',
     border: 'none',
     padding: '0.7rem 0.9rem',
-    borderRadius: '12px',
+    borderRadius: 0,
     cursor: 'pointer',
     fontSize: '0.88rem',
     fontWeight: 500,
     textAlign: 'left',
   },
-  sidebarLinkActive: { background: ACCENT_SOFT, color: '#fff' },
+  sidebarLinkActive: { background: ACCENT_SOFT, color: 'var(--c-text)' },
   sidebarIcon: { display: 'flex', alignItems: 'center', justifyContent: 'center', width: '20px', flex: '0 0 auto', color: 'inherit' },
-  sidebarFooter: { padding: '1rem', borderTop: '1px solid rgba(255,255,255,0.08)' },
+  sidebarFooter: { padding: '1rem', borderTop: '1px solid var(--c-border)' },
   sidebarUser: { display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.75rem' },
   sidebarAvatar: {
-    width: '32px', height: '32px', borderRadius: '50%', background: ACCENT, color: '#fff',
+    width: '32px', height: '32px', borderRadius: '50%', background: ACCENT, color: 'var(--c-on-accent)',
     display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', fontWeight: 700, flex: '0 0 auto',
   },
-  sidebarUserEmail: { fontSize: '0.8rem', color: '#f5f5f7', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
-  sidebarUserRole: { fontSize: '0.72rem', color: 'rgba(255,255,255,0.6)', textTransform: 'capitalize' },
+  sidebarUserEmail: { fontSize: '0.8rem', color: 'var(--c-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+  sidebarUserRole: { fontSize: '0.72rem', color: 'var(--c-sidebar-link)', textTransform: 'capitalize' },
   sidebarSignOut: {
     width: '100%',
-    background: 'rgba(220,38,38,0.12)',
-    color: '#fca5a5',
+    background: 'var(--c-danger-bg)',
+    color: 'var(--c-danger)',
     border: 'none',
     padding: '0.55rem 0.9rem',
-    borderRadius: '10px',
+    borderRadius: 0,
     cursor: 'pointer',
     fontSize: '0.82rem',
     fontWeight: 600,
@@ -3411,29 +4035,142 @@ const styles: any = {
   pageTitle: { fontSize: '1.9rem', fontWeight: '700', margin: '0 0 1.25rem', color: TEXT, letterSpacing: '-0.02em' },
   hint: { color: TEXT_DIM, fontSize: '0.9rem', marginBottom: '1rem' },
 
+  // Role-shaped dashboard header: workspace identity, scope and one-line job.
+  dashHead: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: '1rem',
+    flexWrap: 'wrap',
+    marginBottom: '1.25rem',
+  },
+  dashTitle: { fontSize: '1.9rem', fontWeight: '700', margin: 0, color: TEXT, letterSpacing: '-0.02em' },
+  dashSub: { color: TEXT_DIM, fontSize: '0.9rem', margin: '0.4rem 0 0', maxWidth: '62ch', lineHeight: 1.55 },
+  roleEyebrow: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '0.45rem',
+    marginBottom: '0.5rem',
+    fontSize: '0.68rem',
+    fontWeight: 700,
+    letterSpacing: '0.11em',
+    textTransform: 'uppercase',
+    color: TEXT_DIM,
+  },
+  roleDot: {
+    width: '6px',
+    height: '6px',
+    borderRadius: '999px',
+    background: ACCENT_BRIGHT,
+    flex: '0 0 auto',
+  },
+  scopeChip: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '0.45rem',
+    padding: '0.45rem 0.8rem',
+    borderRadius: 0,
+    border: `1px solid ${BORDER}`,
+    background: SURFACE,
+    fontSize: '0.75rem',
+    whiteSpace: 'nowrap',
+  },
+  scopeChipLabel: {
+    fontSize: '0.62rem',
+    fontWeight: 700,
+    letterSpacing: '0.08em',
+    textTransform: 'uppercase',
+    color: TEXT_FAINT,
+  },
+  scopeChipValue: { color: TEXT, fontWeight: 600 },
+
+  // One-line role brief between the metrics and the activity panels.
+  rolePanel: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '1rem',
+    flexWrap: 'wrap',
+    padding: '0.9rem 1.1rem',
+    marginBottom: '1rem',
+    background: SURFACE,
+    border: `1px solid ${BORDER}`,
+    borderLeft: `3px solid ${ACCENT_BRIGHT}`,
+    borderRadius: 0,
+  },
+  rolePanelKicker: {
+    fontSize: '0.64rem',
+    fontWeight: 700,
+    letterSpacing: '0.1em',
+    textTransform: 'uppercase',
+    color: TEXT_FAINT,
+    marginBottom: '0.25rem',
+  },
+  rolePanelText: { fontSize: '0.86rem', color: TEXT_DIM, lineHeight: 1.5 },
+
+  // Client dashboard: one plain-language posture statement as the headline
+  // of the page, then three narrative cards -- no operator stat grid, no
+  // "Recent Scans"/"Open admin" panels.
+  postureBanner: {
+    padding: '1.5rem 1.75rem',
+    marginBottom: '1.5rem',
+    border: `1px solid ${BORDER}`,
+    borderLeft: '3px solid transparent',
+  },
+  postureBannerSuccess: { borderLeftColor: 'var(--c-success)', background: 'var(--c-success-soft)' },
+  postureBannerWarning: { borderLeftColor: 'var(--c-warn)', background: 'var(--c-warn-soft)' },
+  postureHeadline: {
+    fontFamily: "'Cormorant Garamond', Georgia, serif",
+    fontWeight: 400,
+    fontSize: '1.9rem',
+    lineHeight: 1.2,
+    letterSpacing: '-0.01em',
+    color: TEXT,
+  },
+  postureSub: { fontSize: '0.9rem', color: TEXT_DIM, marginTop: '0.6rem', lineHeight: 1.5 },
+  narrativeGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+    gap: '1rem',
+  },
+  narrativeCard: {
+    background: SURFACE,
+    border: `1px solid ${BORDER}`,
+    padding: '1.5rem',
+  },
+  narrativeValue: {
+    fontSize: '1.7rem',
+    fontWeight: '700',
+    color: TEXT,
+    fontFamily: MONO,
+    fontVariantNumeric: 'tabular-nums',
+    letterSpacing: '-0.02em',
+    marginTop: '0.5rem',
+    lineHeight: 1.3,
+  },
+
   // Stat tiles: dark, slightly raised surfaces with a tabular-numeral,
   // monospace value for that instrument-panel feel.
   statGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' },
   statCard: {
     background: SURFACE,
     border: `1px solid ${BORDER}`,
-    boxShadow: '0 1px 0 rgba(255,255,255,0.03) inset, 0 12px 28px rgba(0,0,0,0.3)',
-    borderRadius: '16px',
+    boxShadow: '0 1px 0 var(--c-inset-highlight) inset, 0 12px 28px var(--c-shadow)',
+    borderRadius: 0,
     padding: '1.25rem',
   },
   statCardEmphasis: {
     borderColor: ACCENT_BORDER,
-    boxShadow: `0 0 0 1px ${ACCENT_BORDER} inset, 0 16px 36px rgba(124,58,237,0.12)`,
+    boxShadow: `0 0 0 1px ${ACCENT_BORDER} inset, 0 16px 36px var(--c-accent-glow)`,
   },
   statLabel: { fontSize: '0.78rem', fontWeight: 600, letterSpacing: '0.02em', color: TEXT_FAINT, marginBottom: '0.5rem' },
   statValue: { fontSize: '2rem', fontWeight: '700', color: TEXT, fontFamily: MONO, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em' },
   statHint: { fontSize: '0.78rem', color: TEXT_FAINT, marginTop: '0.35rem' },
   skeleton: {
     height: '118px',
-    borderRadius: '16px',
-    background: 'linear-gradient(90deg, rgba(255,255,255,0.03), rgba(255,255,255,0.07), rgba(255,255,255,0.03))',
-    backgroundSize: '200% 100%',
-    animation: 'ultorn-sheen 1.4s ease-in-out infinite',
+    borderRadius: 0,
+    background: 'var(--c-wash)',
+    animation: 'ultorn-pulse 1.4s ease-in-out infinite',
   },
   metricStrip: {
     display: 'grid',
@@ -3441,7 +4178,7 @@ const styles: any = {
     gap: '0.75rem',
     background: SURFACE,
     border: `1px solid ${BORDER}`,
-    borderRadius: '16px',
+    borderRadius: 0,
     padding: '0.9rem 1.1rem',
     marginBottom: '1.25rem',
   },
@@ -3457,8 +4194,8 @@ const styles: any = {
   lightCard: {
     background: SURFACE,
     border: `1px solid ${BORDER}`,
-    boxShadow: '0 1px 0 rgba(255,255,255,0.03) inset, 0 12px 28px rgba(0,0,0,0.3)',
-    borderRadius: '16px',
+    boxShadow: '0 1px 0 var(--c-inset-highlight) inset, 0 12px 28px var(--c-shadow)',
+    borderRadius: 0,
     padding: '1.5rem',
     margin: '1rem 0',
   },
@@ -3468,9 +4205,9 @@ const styles: any = {
   // Elevated "focus panel": the split list/detail workspace
   panelDark: {
     background: SURFACE_RAISED,
-    borderRadius: '18px',
+    borderRadius: 0,
     border: `1px solid ${BORDER}`,
-    boxShadow: '0 1px 0 rgba(255,255,255,0.03) inset, 0 20px 44px rgba(0,0,0,0.35)',
+    boxShadow: '0 1px 0 var(--c-inset-highlight) inset, 0 20px 44px var(--c-shadow-strong)',
     overflow: 'hidden',
   },
   panelHeader: {
@@ -3479,11 +4216,11 @@ const styles: any = {
     justifyContent: 'space-between',
     padding: '1.25rem 1.25rem 0.5rem',
   },
-  panelTitle: { margin: 0, fontSize: '1rem', fontWeight: 600, color: '#f5f5f7' },
+  panelTitle: { margin: 0, fontSize: '1rem', fontWeight: 600, color: 'var(--c-text)' },
   panelBody: { display: 'flex', minHeight: '320px', maxHeight: '560px' },
   listPane: {
     flex: '0 0 40%',
-    borderRight: '1px solid rgba(255,255,255,0.06)',
+    borderRight: '1px solid var(--c-wash)',
     padding: '0.5rem',
     overflowY: 'auto',
   },
@@ -3494,10 +4231,12 @@ const styles: any = {
     justifyContent: 'space-between',
     gap: '0.75rem',
     padding: '0.85rem 0.9rem',
-    borderRadius: '12px',
+    borderRadius: 0,
     cursor: 'pointer',
     marginBottom: '2px',
-    border: '1px solid transparent',
+    borderWidth: '1px',
+    borderStyle: 'solid',
+    borderColor: 'transparent',
   },
   listRowActive: { background: ACCENT_SOFT, borderColor: ACCENT_BORDER },
   listRowMain: { minWidth: 0 },
@@ -3509,7 +4248,7 @@ const styles: any = {
   detailSub: { fontSize: '0.85rem', color: TEXT_DIM, marginTop: '0.3rem', display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' },
 
   subCardGrid: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.6rem', marginTop: '1.25rem' },
-  subCard: { background: SURFACE_SUNKEN, border: `1px solid ${BORDER}`, borderRadius: '12px', padding: '0.85rem' },
+  subCard: { background: SURFACE_SUNKEN, border: `1px solid ${BORDER}`, borderRadius: 0, padding: '0.85rem' },
   subCardLabel: { fontSize: '0.72rem', color: TEXT_FAINT, marginBottom: '0.35rem' },
   subCardValue: { fontSize: '1.2rem', fontWeight: 700, color: TEXT, fontFamily: MONO },
 
@@ -3551,14 +4290,14 @@ const styles: any = {
     color: TEXT,
   },
 
-  badge: { display: 'inline-flex', padding: '0.2rem 0.6rem', borderRadius: '999px', fontSize: '0.72rem', fontWeight: 600, whiteSpace: 'nowrap' },
+  badge: { display: 'inline-flex', padding: '0.2rem 0.6rem', borderRadius: 0, fontSize: '0.72rem', fontWeight: 600, whiteSpace: 'nowrap' },
 
   darkActionBtn: {
     background: TEXT,
-    color: '#050505',
+    color: 'var(--c-inverse-ink)',
     border: 'none',
     padding: '0.5rem 1.1rem',
-    borderRadius: '10px',
+    borderRadius: 0,
     fontWeight: 600,
     cursor: 'pointer',
     fontSize: '0.82rem',
@@ -3568,9 +4307,9 @@ const styles: any = {
   form: { display: 'flex', flexDirection: 'column', gap: '0.9rem' },
   input: {
     padding: '0.7rem 0.9rem',
-    background: 'rgba(255,255,255,0.05)',
+    background: 'var(--c-field)',
     border: `1px solid ${BORDER_STRONG}`,
-    borderRadius: '10px',
+    borderRadius: 0,
     fontSize: '0.95rem',
     color: TEXT,
     width: '100%',
@@ -3578,48 +4317,48 @@ const styles: any = {
   },
   inputSmall: {
     padding: '0.4rem 0.6rem',
-    background: 'rgba(255,255,255,0.05)',
+    background: 'var(--c-field)',
     border: `1px solid ${BORDER_STRONG}`,
-    borderRadius: '8px',
+    borderRadius: 0,
     fontSize: '0.9rem',
     color: TEXT,
   },
   button: {
     background: ACCENT,
-    color: '#fff',
+    color: 'var(--c-on-accent)',
     border: 'none',
     padding: '0.72rem 1.4rem',
-    borderRadius: '10px',
+    borderRadius: 0,
     fontWeight: '600',
     cursor: 'pointer',
     fontSize: '0.9rem',
   },
   buttonGhostLight: {
-    background: 'rgba(255,255,255,0.06)',
+    background: 'var(--c-wash)',
     color: TEXT,
     border: `1px solid ${BORDER_STRONG}`,
     padding: '0.58rem 1.15rem',
-    borderRadius: '10px',
+    borderRadius: 0,
     fontWeight: '600',
     cursor: 'pointer',
     fontSize: '0.85rem',
   },
   buttonSmall: {
     background: ACCENT_SOFT,
-    color: '#d8b4fe',
+    color: 'var(--c-accent-violet)',
     border: `1px solid ${ACCENT_BORDER}`,
     padding: '0.3rem 0.7rem',
-    borderRadius: '999px',
+    borderRadius: 0,
     fontWeight: '600',
     cursor: 'pointer',
     fontSize: '0.78rem',
   },
-  alert: { padding: '0.75rem 1rem', borderRadius: '12px', marginBottom: '1rem', fontSize: '0.9rem' },
+  alert: { padding: '0.75rem 1rem', borderRadius: 0, marginBottom: '1rem', fontSize: '0.9rem' },
   codeBlock: {
-    background: 'rgba(0,0,0,0.35)',
-    color: '#d8b4fe',
+    background: 'var(--c-scrim)',
+    color: 'var(--c-accent-violet)',
     padding: '1rem',
-    borderRadius: '10px',
+    borderRadius: 0,
     fontFamily: MONO,
     fontSize: '0.8rem',
     overflowX: 'auto',
@@ -3629,9 +4368,9 @@ const styles: any = {
   checkboxLabel: { display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: TEXT_DIM },
   textarea: {
     padding: '0.7rem 0.9rem',
-    background: 'rgba(255,255,255,0.05)',
+    background: 'var(--c-field)',
     border: `1px solid ${BORDER_STRONG}`,
-    borderRadius: '10px',
+    borderRadius: 0,
     fontSize: '0.95rem',
     color: TEXT,
     width: '100%',

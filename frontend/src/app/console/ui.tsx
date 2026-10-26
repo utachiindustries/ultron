@@ -10,13 +10,13 @@
 
 import React, { useEffect, useRef } from 'react'
 
-const ACCENT = '#7c3aed'
-const TEXT = '#f4f4f6'
-const TEXT_DIM = 'rgba(244,244,246,0.64)'
-const TEXT_FAINT = 'rgba(244,244,246,0.42)'
-const BORDER = 'rgba(255,255,255,0.08)'
-const BORDER_STRONG = 'rgba(255,255,255,0.16)'
-const SURFACE_RAISED = '#15151b'
+const ACCENT = 'var(--c-accent)'
+const TEXT = 'var(--c-text)'
+const TEXT_DIM = 'var(--c-text-dim)'
+const TEXT_FAINT = 'var(--c-text-faint)'
+const BORDER = 'var(--c-border)'
+const BORDER_STRONG = 'var(--c-border-strong)'
+const SURFACE_RAISED = 'var(--c-surface-raised)'
 
 // These primitives render on the console's single dark surface everywhere
 // now (there is no more light-page variant), so "light"/"dark" `tone` props
@@ -25,28 +25,28 @@ const SURFACE_RAISED = '#15151b'
 const S = {
   field: { display: 'flex', flexDirection: 'column' as const, gap: '0.35rem', marginBottom: '0.9rem' },
   label: { fontSize: '0.78rem', fontWeight: 600, color: TEXT_DIM, letterSpacing: '0.01em' },
-  required: { color: '#fca5a5', marginLeft: '0.15rem' },
+  required: { color: 'var(--c-danger)', marginLeft: '0.15rem' },
   hint: { fontSize: '0.75rem', color: TEXT_FAINT },
-  error: { fontSize: '0.75rem', color: '#fca5a5' },
+  error: { fontSize: '0.75rem', color: 'var(--c-danger)' },
   control: {
     width: '100%',
     padding: '0.65rem 0.8rem',
-    borderRadius: '10px',
+    borderRadius: 0,
     border: `1px solid ${BORDER_STRONG}`,
-    background: 'rgba(255,255,255,0.05)',
+    background: 'var(--c-field)',
     color: TEXT,
     fontSize: '0.9rem',
     minHeight: 44,
     outline: 'none',
   },
-  controlError: { borderColor: '#f87171' },
+  controlError: { borderColor: 'var(--c-danger-strong)' },
   button: {
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
     gap: '0.45rem',
     padding: '0.6rem 1rem',
-    borderRadius: '10px',
+    borderRadius: 0,
     border: '1px solid transparent',
     fontSize: '0.875rem',
     fontWeight: 600,
@@ -54,18 +54,18 @@ const S = {
     minHeight: 40,
     transition: 'background-color 120ms ease, border-color 120ms ease, opacity 120ms ease',
   },
-  primary: { background: ACCENT, color: '#fff' },
-  secondary: { background: 'rgba(255,255,255,0.07)', color: TEXT, borderColor: BORDER_STRONG },
-  secondaryDark: { background: 'rgba(255,255,255,0.1)', color: TEXT, borderColor: 'rgba(255,255,255,0.2)' },
-  ghost: { background: 'transparent', color: '#c4b5fd', borderColor: 'rgba(124,58,237,0.4)' },
-  danger: { background: '#b91c1c', color: '#fff' },
+  primary: { background: ACCENT, color: 'var(--c-on-accent)' },
+  secondary: { background: 'var(--c-field)', color: TEXT, borderColor: BORDER_STRONG },
+  secondaryDark: { background: 'var(--c-wash-strong)', color: TEXT, borderColor: 'var(--c-border-strong)' },
+  ghost: { background: 'transparent', color: 'var(--c-accent-bright)', borderColor: 'var(--c-accent-border)' },
+  danger: { background: 'var(--c-danger-solid)', color: 'var(--c-on-accent)' },
   disabled: { opacity: 0.5, cursor: 'not-allowed' },
   badge: {
     display: 'inline-flex',
     alignItems: 'center',
     gap: '0.25rem',
     padding: '0.15rem 0.5rem',
-    borderRadius: 999,
+    borderRadius: 0,
     fontSize: '0.72rem',
     fontWeight: 700,
     letterSpacing: '0.02em',
@@ -86,22 +86,22 @@ const S = {
     width: 16,
     height: 16,
     borderRadius: '50%',
-    border: '2px solid rgba(255,255,255,0.25)',
-    borderTopColor: '#fff',
+    border: '2px solid var(--c-border-strong)',
+    borderTopColor: 'var(--c-on-accent)',
     animation: 'ultorn-spin 700ms linear infinite',
   },
 }
 
 const TONES: Record<string, React.CSSProperties> = {
-  critical: { background: 'rgba(248,113,113,0.14)', color: '#fca5a5' },
-  high: { background: 'rgba(251,146,60,0.14)', color: '#fdba74' },
-  medium: { background: 'rgba(251,191,36,0.14)', color: '#fcd34d' },
-  low: { background: 'rgba(74,222,128,0.14)', color: '#86efac' },
-  success: { background: 'rgba(74,222,128,0.14)', color: '#86efac' },
-  warning: { background: 'rgba(251,191,36,0.14)', color: '#fcd34d' },
-  danger: { background: 'rgba(248,113,113,0.14)', color: '#fca5a5' },
-  neutral: { background: 'rgba(255,255,255,0.08)', color: TEXT_DIM },
-  info: { background: 'rgba(124,58,237,0.14)', color: '#d8b4fe' },
+  critical: { background: 'var(--c-danger-soft)', color: 'var(--c-danger)' },
+  high: { background: 'var(--c-warn-soft)', color: 'var(--c-warn)' },
+  medium: { background: 'var(--c-warn-soft)', color: 'var(--c-warn)' },
+  low: { background: 'var(--c-success-soft)', color: 'var(--c-success)' },
+  success: { background: 'var(--c-success-soft)', color: 'var(--c-success)' },
+  warning: { background: 'var(--c-warn-soft)', color: 'var(--c-warn)' },
+  danger: { background: 'var(--c-danger-soft)', color: 'var(--c-danger)' },
+  neutral: { background: 'var(--c-wash)', color: TEXT_DIM },
+  info: { background: 'var(--c-accent-soft)', color: 'var(--c-accent-violet)' },
 }
 
 export function Badge({ children, tone = 'neutral' }: { children: React.ReactNode; tone?: string }) {
@@ -131,10 +131,10 @@ export function Field({
     .join(' ')
   return (
     <div style={S.field}>
-      <label htmlFor={htmlFor} style={{ ...S.label, ...(dark ? { color: 'rgba(255,255,255,0.82)' } : {}) }}>
+      <label htmlFor={htmlFor} style={{ ...S.label, ...(dark ? { color: 'var(--c-text-soft)' } : {}) }}>
         {label}
         {required && (
-          <span style={{ ...S.required, ...(dark ? { color: '#fca5a5' } : {}) }} aria-hidden="true">
+          <span style={{ ...S.required, ...(dark ? { color: 'var(--c-danger)' } : {}) }} aria-hidden="true">
             *
           </span>
         )}
@@ -149,12 +149,12 @@ export function Field({
           })
         : children}
       {hint && (
-        <span id={`${htmlFor}-hint`} style={{ ...S.hint, ...(dark ? { color: 'rgba(255,255,255,0.62)' } : {}) }}>
+        <span id={`${htmlFor}-hint`} style={{ ...S.hint, ...(dark ? { color: 'var(--c-text-dim)' } : {}) }}>
           {hint}
         </span>
       )}
       {error && (
-        <span id={`${htmlFor}-error`} style={{ ...S.error, ...(dark ? { color: '#fca5a5' } : {}) }} role="alert">
+        <span id={`${htmlFor}-error`} style={{ ...S.error, ...(dark ? { color: 'var(--c-danger)' } : {}) }} role="alert">
           {error}
         </span>
       )}
@@ -163,9 +163,9 @@ export function Field({
 }
 
 const DARK_CONTROL: React.CSSProperties = {
-  background: 'rgba(255,255,255,0.07)',
-  border: '1px solid rgba(255,255,255,0.18)',
-  color: '#f5f5f7',
+  background: 'var(--c-field)',
+  border: '1px solid var(--c-border-strong)',
+  color: 'var(--c-text)',
 }
 
 function controlStyle(tone: 'light' | 'dark', invalid?: boolean, style?: React.CSSProperties): React.CSSProperties {
@@ -261,7 +261,7 @@ export function EmptyState({
 export function Spinner({ label = 'Loading' }: { label?: string }) {
   return (
     <div role="status" aria-live="polite" style={{ ...S.empty, flexDirection: 'row', padding: '1.5rem' }}>
-      <span style={{ ...S.spinner, borderColor: 'rgba(124,58,237,0.25)', borderTopColor: ACCENT }} />
+      <span style={{ ...S.spinner, borderColor: 'var(--c-accent-border)', borderTopColor: ACCENT }} />
       <span style={{ fontSize: '0.85rem' }}>{label}…</span>
     </div>
   )
@@ -269,7 +269,7 @@ export function Spinner({ label = 'Loading' }: { label?: string }) {
 
 export function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }) {
   return (
-    <div role="alert" style={{ ...S.empty, color: '#fca5a5' }}>
+    <div role="alert" style={{ ...S.empty, color: 'var(--c-danger)' }}>
       <strong>Something went wrong</strong>
       <span style={{ fontSize: '0.85rem', maxWidth: 480 }}>{message}</span>
       {onRetry && (
@@ -291,10 +291,10 @@ export function Toast({
   onDismiss: () => void
 }) {
   const bg =
-    tone === 'error' ? 'rgba(248,113,113,0.12)' : tone === 'success' ? 'rgba(74,222,128,0.12)' : 'rgba(124,58,237,0.14)'
-  const color = tone === 'error' ? '#fca5a5' : tone === 'success' ? '#86efac' : '#d8b4fe'
+    tone === 'error' ? 'var(--c-danger-bg)' : tone === 'success' ? 'var(--c-success-bg)' : 'var(--c-accent-soft)'
+  const color = tone === 'error' ? 'var(--c-danger)' : tone === 'success' ? 'var(--c-success)' : 'var(--c-accent-violet)'
   const border =
-    tone === 'error' ? 'rgba(248,113,113,0.35)' : tone === 'success' ? 'rgba(74,222,128,0.35)' : 'rgba(124,58,237,0.4)'
+    tone === 'error' ? 'var(--c-danger-border)' : tone === 'success' ? 'var(--c-success-border)' : 'var(--c-accent-border)'
 
   return (
     <div
@@ -308,7 +308,7 @@ export function Toast({
         background: bg,
         color,
         border: `1px solid ${border}`,
-        borderRadius: 10,
+        borderRadius: 0,
         padding: '0.7rem 0.9rem',
         marginBottom: '1rem',
         fontSize: '0.87rem',
@@ -398,8 +398,7 @@ export function ConfirmDialog({
         alignItems: 'center',
         justifyContent: 'center',
         padding: '1.5rem',
-        background: 'rgba(8,8,12,0.55)',
-        backdropFilter: 'blur(4px)',
+        background: 'var(--c-overlay)',
       }}
       onClick={(e) => {
         if (e.target === e.currentTarget) onCancel()
@@ -416,9 +415,9 @@ export function ConfirmDialog({
           maxWidth: 420,
           background: SURFACE_RAISED,
           border: `1px solid ${BORDER}`,
-          borderRadius: 18,
+          borderRadius: 0,
           padding: '1.5rem',
-          boxShadow: '0 24px 80px rgba(0,0,0,0.5)',
+          boxShadow: '0 24px 80px var(--c-shadow-modal)',
         }}
       >
         <h2 id={titleId} style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '0.5rem', color: TEXT }}>
