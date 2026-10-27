@@ -36,8 +36,9 @@ MVP backend (FastAPI + SQLAlchemy + SQLite) + frontend (Next.js) implementing:
   run-now, pause/resume, and next-run tracking
 - **AI code scanning**: detects hardcoded secrets, `eval`/`exec`, disabled TLS verification,
   and insecure defaults in AI-generated or human-written code
-- **Senegal Cyber Law 2026 compliance**: maps findings to law articles, CERT notification
-  windows, and sector-specific obligations (banking, telecom, government)
+- **Bill No. 25/2026 compliance mapping (draft)**: maps findings to article references,
+  CERT notification windows, and sector-specific obligations where a pack exists (sports pack live; banking, telecom, and government on the roadmap).
+  The bill passed the National Assembly on 21 August 2026; the mapping is not a legal opinion.
 - **Sports sector pack**: operational guidance for clubs, federations, and academies —
   matchday and ticketing availability, athlete/minor safeguarding data, fan/payment data,
   federation evidence, and AI in scouting/selection. Included in compliance summaries,
@@ -97,7 +98,12 @@ npm run dev
 Frontend at `http://localhost:3000`. Set `NEXT_PUBLIC_API_URL=http://localhost:8000`.
 
 - `/`: marketing landing page (sign-in entry point)
-- `/console`: the operator app (dashboard, clients, scans, findings, AI guard, audit, admin)
+- `/console`: the operator app (role-specific dashboard, clients, scans, findings, AI guard,
+  audit, admin) with a persisted dark/light theme toggle in the sidebar (and mobile top bar)
+- `/signup`: self-service account creation (new accounts are always role "client")
+- `/forgot-password` and `/reset-password`: self-service password reset. The reset link is
+  logged server-side until a mail provider is configured; with `DEBUG=true` the API also
+  returns a development-only token so the flow can be completed locally.
 
 ### Docker
 
@@ -144,7 +150,7 @@ docker-compose up --build
 | PATCH | `/alerts/{id}` | Acknowledge / resolve / mark false positive |
 | GET/POST | `/code-scans` | AI code scanning |
 | GET | `/code-scans/{id}/issues` | Issues found in a code scan |
-| POST | `/compliance/map` | Map findings to Senegal Cyber Law 2026 articles |
+| POST | `/compliance/map` | Map findings to Bill No. 25/2026 article references (draft) |
 | GET | `/compliance/summary` | Sector compliance summary and next steps |
 | POST | `/ai/query` | Sanitized AI query (logged, returns provider + model) |
 | GET | `/ai/audit` | AI query audit log |
@@ -239,8 +245,9 @@ backend/
 frontend/
   src/app/page.tsx              # Marketing landing page (hero, video bg, entrance animation)
   src/app/hero.css              # Landing-page design system (reference-pixel --u scaling)
-  src/app/marketing-page.css    # Shared dark theme for subpages + console login
-  src/app/console/page.tsx      # Operator app (dashboard, clients, scans, findings, AI, audit, admin)
+  src/app/marketing-page.css    # Shared dark theme for marketing subpages
+  src/app/auth.css              # Auth screens: dark/light design system
+  src/app/console/page.tsx      # Operator app (role dashboards, clients, scans, findings, AI, audit, admin)
   src/app/{platform,scanning,sovereignty,contact,privacy-notice,service-agreement}/page.tsx
   src/content/site.ts           # Single source of truth for nav links + all marketing copy
   src/components/               # MarketingNav, MarketingFooter, MarketingPageShell, Arrow
