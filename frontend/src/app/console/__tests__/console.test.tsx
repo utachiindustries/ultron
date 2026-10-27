@@ -36,20 +36,37 @@ describe('Console auth gate (smoke)', () => {
     render(<Page />)
 
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument()
-    expect(screen.getByLabelText(/password/i)).toBeInTheDocument()
+    // The password reveal toggle also carries "password" in its aria-label,
+    // so scope the query to the input itself.
+    expect(screen.getByLabelText(/password/i, { selector: 'input' })).toBeInTheDocument()
   })
 
-  it('does not crash when submitting the login form with empty fields', async () => {
+  it('validates empty fields locally before spending a rate-limited login attempt', async () => {
     mockFetchSequence(async () => jsonResponse({ detail: 'Invalid credentials' }, false, 401))
 
     const user = userEvent.setup()
     render(<Page />)
 
-    const submit = screen.getByRole('button', { name: /sign in/i })
-    await user.click(submit)
+    await user.click(screen.getByRole('button', { name: /sign in/i }))
+
+    expect(global.fetch).not.toHaveBeenCalled()
+    expect(screen.getByText('Enter your email address.')).toBeInTheDocument()
+    expect(screen.getByText('Enter your password.')).toBeInTheDocument()
+    expect(screen.getByText(/sign in to the operator console/i)).toBeInTheDocument()
+  })
+
+  it('surfaces the backend error when credentials are rejected', async () => {
+    mockFetchSequence(async () => jsonResponse({ detail: 'Incorrect email or password' }, false, 401))
+
+    const user = userEvent.setup()
+    render(<Page />)
+
+    await user.type(screen.getByLabelText(/email/i), 'nobody@example.com')
+    await user.type(screen.getByLabelText(/password/i, { selector: 'input' }), 'wrong-password')
+    await user.click(screen.getByRole('button', { name: /sign in/i }))
 
     await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalled()
+      expect(screen.getByText('Incorrect email or password')).toBeInTheDocument()
     })
 
     // Still on the login screen, no crash.
@@ -73,7 +90,7 @@ describe('Console auth gate (smoke)', () => {
     render(<Page />)
 
     await user.type(screen.getByLabelText(/email/i), 'operator@example.com')
-    await user.type(screen.getByLabelText(/password/i), 'supersecret')
+    await user.type(screen.getByLabelText(/password/i, { selector: 'input' }), 'supersecret')
     await user.click(screen.getByRole('button', { name: /sign in/i }))
 
     await waitFor(() => {
@@ -82,7 +99,7 @@ describe('Console auth gate (smoke)', () => {
 
     // The sidebar nav and dashboard heading confirm the authenticated shell rendered.
     expect(screen.getByRole('navigation', { name: /overview navigation/i })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: /dashboard/i })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /operations overview/i })).toBeInTheDocument()
     expect(screen.queryByText(/sign in to the operator console/i)).not.toBeInTheDocument()
 
     expect(localStorage.getItem('token')).toBe('fake-token')

@@ -1,0 +1,713 @@
+/* Auth surface design system: sign in, sign up, forgot/reset password.
+   Two panes on desktop -- brand context on the left, one focused task on
+   the right -- collapsing to a compact header plus full-width form on
+   phones. Every color, state and spacing rule the auth screens need lives
+   here so none of them drift; nothing below depends on the marketing or
+   console sheets. Remapped onto the shared Utachi ink/paper system: light
+   is the default surface, dark is an ink-950 panel -- flat, square, no
+   glow or glass either way. */
+
+.auth-shell {
+  --auth-bg: #fcfcfa;
+  --auth-ink: #0a0a0a;
+  --auth-muted: #333333;
+  --auth-dim: #595959;
+  --auth-faint: #8c8c8c;
+  --auth-line: #d9d9d9;
+  --auth-line-soft: #ededed;
+  --auth-line-strong: #a6a6a6;
+  --auth-field: #ffffff;
+  --auth-field-focus: #ffffff;
+  --auth-hover: #f5f5f5;
+  --auth-accent: #3d6658;
+  --auth-aside-bg: #f5f5f5;
+  --auth-aside-glow: transparent;
+  --auth-aside-sheen: transparent;
+  --auth-card-top: #ffffff;
+  --auth-card-bottom: #ffffff;
+  --auth-card-shadow: 0 1px 0 rgba(10, 10, 10, 0.04);
+  --auth-btn-bg: #0a0a0a;
+  --auth-btn-bg-hover: #3d6658;
+  --auth-btn-ink: #ffffff;
+  --auth-spinner-track: rgba(255, 255, 255, 0.3);
+  --auth-spinner-head: #ffffff;
+  --auth-notice-ink: #34574b;
+  --auth-notice-border: #b9d3c3;
+  --auth-notice-bg: #edf4f0;
+  --auth-error-ink: #8f1b12;
+  --auth-error-border: #e5b3ad;
+  --auth-error-bg: #fbedec;
+  --auth-danger-ink: #8f1b12;
+  --auth-met: #3d6658;
+  --auth-font: 'Space Grotesk', 'Segoe UI', system-ui, sans-serif;
+  --auth-font-display: 'Cormorant Garamond', Georgia, serif;
+
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+  background: var(--auth-bg);
+  color: var(--auth-ink);
+  font-family: var(--auth-font);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+.auth-shell a {
+  color: inherit;
+}
+
+/* ---------------------------------------------------------------- */
+/* Brand pane                                                        */
+/* ---------------------------------------------------------------- */
+.auth-aside {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: clamp(28px, 4vw, 56px);
+  border-right: 1px solid var(--auth-line-soft);
+  background: var(--auth-aside-bg);
+  overflow: hidden;
+}
+.auth-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  width: fit-content;
+  text-decoration: none;
+}
+.auth-logo img {
+  height: 34px;
+  width: auto;
+  display: block;
+}
+.auth-logo-divider {
+  width: 1px;
+  height: 16px;
+  background: var(--auth-line-strong);
+}
+.auth-logo-product {
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.03em;
+  color: var(--auth-ink);
+}
+.auth-aside-body {
+  margin: auto 0;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.auth-aside-title {
+  margin: 0;
+  font-family: var(--auth-font-display);
+  font-size: clamp(26px, 2.6vw, 34px);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+.auth-aside-lead {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--auth-muted);
+}
+.auth-points {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 14px;
+}
+.auth-points li {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--auth-dim);
+}
+.auth-check {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: var(--auth-accent);
+}
+.auth-aside-foot {
+  margin: 0;
+  font-family: var(--auth-font-mono, 'IBM Plex Mono', monospace);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  color: var(--auth-faint);
+}
+
+/* ---------------------------------------------------------------- */
+/* Task pane and card                                                */
+/* ---------------------------------------------------------------- */
+.auth-main {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(24px, 4vw, 56px);
+}
+.auth-card {
+  width: 100%;
+  max-width: 440px;
+  background: var(--auth-card-top);
+  border: 1px solid var(--auth-line-soft);
+  border-radius: 0;
+  padding: clamp(24px, 2.8vw, 32px);
+  box-shadow: var(--auth-card-shadow);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .auth-card {
+    animation: auth-rise 0.35s ease both;
+  }
+}
+@keyframes auth-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---------------------------------------------------------------- */
+/* Headings and banners                                              */
+/* ---------------------------------------------------------------- */
+.auth-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--auth-dim);
+}
+.auth-kicker::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--auth-accent);
+}
+.auth-title {
+  margin: 12px 0 0;
+  font-family: var(--auth-font-display);
+  font-size: 28px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+}
+.auth-sub {
+  margin: 8px 0 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--auth-muted);
+}
+.auth-sub strong {
+  color: var(--auth-ink);
+  font-weight: 500;
+}
+.auth-notice {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+  padding: 12px 14px;
+  border: 1px solid var(--auth-notice-border);
+  background: var(--auth-notice-bg);
+  color: var(--auth-notice-ink);
+  font-size: 13px;
+  line-height: 1.5;
+  border-radius: 0;
+}
+
+/* ---------------------------------------------------------------- */
+/* Fields                                                            */
+/* ---------------------------------------------------------------- */
+.auth-form {
+  margin-top: 20px;
+  display: grid;
+  gap: 18px;
+}
+.auth-field {
+  display: grid;
+  gap: 8px;
+}
+.auth-label-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.auth-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--auth-muted);
+}
+.auth-optional {
+  font-weight: 400;
+  color: var(--auth-faint);
+}
+.auth-inline-link {
+  font-size: 12.5px;
+  color: var(--auth-dim);
+  text-decoration: none;
+}
+.auth-inline-link:hover {
+  color: var(--auth-ink);
+}
+.auth-input {
+  width: 100%;
+  height: 48px;
+  padding: 0 14px;
+  border-radius: 0;
+  border: 1px solid var(--auth-line);
+  background: var(--auth-field);
+  color: var(--auth-ink);
+  font: inherit;
+  font-size: 15px;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, background-color 0.16s ease;
+}
+.auth-input::placeholder {
+  color: var(--auth-faint);
+}
+.auth-input:hover {
+  border-color: var(--auth-line-strong);
+}
+.auth-input:focus {
+  outline: none;
+  border-color: var(--auth-accent);
+  background: var(--auth-field-focus);
+  box-shadow: 0 0 0 1px var(--auth-accent);
+}
+.auth-input[aria-invalid='true'] {
+  border-color: #e5b3ad;
+}
+.auth-input[aria-invalid='true']:focus {
+  border-color: #b42318;
+  box-shadow: 0 0 0 1px #b42318;
+}
+.auth-password {
+  position: relative;
+}
+.auth-password .auth-input {
+  padding-right: 50px;
+}
+.auth-reveal {
+  position: absolute;
+  top: 50%;
+  right: 7px;
+  transform: translateY(-50%);
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--auth-dim);
+  cursor: pointer;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+.auth-reveal:hover {
+  color: var(--auth-ink);
+  background: var(--auth-hover);
+}
+.auth-rules {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin-top: 2px;
+}
+.auth-rule {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--auth-faint);
+  transition: color 0.16s ease;
+}
+.auth-rule svg {
+  flex: 0 0 auto;
+  opacity: 0.5;
+}
+.auth-rule.is-met {
+  color: var(--auth-met);
+}
+.auth-rule.is-met svg {
+  opacity: 1;
+}
+.auth-field-error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--auth-danger-ink);
+}
+
+/* Form-level error banner. Kept under the historical `.login-error` name
+   because the Playwright signup spec asserts against it. */
+.login-error {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--auth-error-border);
+  background: var(--auth-error-bg);
+  color: var(--auth-error-ink);
+  font-size: 13px;
+  line-height: 1.5;
+  border-radius: 0;
+}
+
+/* ---------------------------------------------------------------- */
+/* Buttons and links                                                 */
+/* ---------------------------------------------------------------- */
+.auth-submit {
+  width: 100%;
+  height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 0;
+  border-radius: 0;
+  cursor: pointer;
+  background: var(--auth-btn-bg);
+  color: var(--auth-btn-ink);
+  font: inherit;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: background-color 0.16s ease, transform 0.12s ease, opacity 0.16s ease;
+}
+.auth-submit:hover:not(:disabled) {
+  background: var(--auth-btn-bg-hover);
+}
+.auth-submit:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.auth-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.auth-spinner {
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  border: 2px solid var(--auth-spinner-track);
+  border-top-color: var(--auth-spinner-head);
+  animation: auth-spin 0.7s linear infinite;
+}
+@keyframes auth-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.auth-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 42px;
+  padding: 0 18px;
+  margin-top: 2px;
+  border-radius: 0;
+  border: 1px solid var(--auth-line);
+  background: var(--auth-field);
+  color: var(--auth-ink);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+.auth-btn-secondary:hover {
+  background: var(--auth-hover);
+  border-color: var(--auth-line-strong);
+}
+.auth-hint {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--auth-dim);
+}
+.auth-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 8px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--auth-line-soft);
+  font-size: 13px;
+  color: var(--auth-dim);
+}
+.auth-links a {
+  color: var(--auth-muted);
+  text-decoration: none;
+}
+.auth-links a:hover {
+  color: var(--auth-ink);
+}
+.auth-links a.auth-link-strong {
+  color: var(--auth-ink);
+  font-weight: 500;
+}
+.auth-legal {
+  margin: 14px 0 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--auth-faint);
+}
+.auth-legal a {
+  color: var(--auth-dim);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.auth-legal a:hover {
+  color: var(--auth-ink);
+}
+
+/* ---------------------------------------------------------------- */
+/* Divider + demo accounts (sign-in screen)                          */
+/* ---------------------------------------------------------------- */
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 0 10px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--auth-faint);
+}
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--auth-line-soft);
+}
+.auth-demo {
+  display: grid;
+  gap: 6px;
+}
+.auth-demo-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 9px 13px;
+  border-radius: 0;
+  text-align: left;
+  cursor: pointer;
+  border: 1px solid var(--auth-line-soft);
+  background: var(--auth-field);
+  color: var(--auth-ink);
+  font: inherit;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+.auth-demo-btn:hover:not(:disabled) {
+  border-color: var(--auth-accent);
+  background: #edf4f0;
+}
+.auth-demo-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.auth-demo-text {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+.auth-demo-role {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.auth-demo-blurb {
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--auth-dim);
+}
+.auth-demo-arrow {
+  flex: 0 0 auto;
+  color: var(--auth-faint);
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+.auth-demo-btn:hover:not(:disabled) .auth-demo-arrow {
+  color: var(--auth-accent);
+  transform: translateX(2px);
+}
+
+/* Development-only panel (reset link when no mail provider is wired). */
+.auth-dev {
+  margin-top: 22px;
+  padding: 14px;
+  border: 1px dashed var(--auth-accent);
+  background: #edf4f0;
+  border-radius: 0;
+}
+.auth-dev-title {
+  margin: 0;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--auth-accent);
+}
+.auth-dev-text {
+  margin: 8px 0 0;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--auth-muted);
+}
+
+/* ---------------------------------------------------------------- */
+/* Focus, motion and responsive behavior                             */
+/* ---------------------------------------------------------------- */
+.auth-shell a:focus-visible,
+.auth-shell button:focus-visible {
+  outline: 2px solid var(--auth-accent);
+  outline-offset: 2px;
+  border-radius: 0;
+}
+
+@media (max-width: 900px) {
+  .auth-shell {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+    align-content: start;
+  }
+  .auth-aside {
+    flex-direction: row;
+    align-items: center;
+    padding: 18px 20px;
+    border-right: 0;
+    border-bottom: 1px solid var(--auth-line-soft);
+    background: var(--auth-aside-bg);
+  }
+  .auth-aside-body,
+  .auth-aside-foot {
+    display: none;
+  }
+  .auth-main {
+    align-items: flex-start;
+    padding: 28px 20px 48px;
+  }
+}
+
+@media (max-width: 520px) {
+  .auth-main {
+    padding: 20px 18px 40px;
+  }
+  .auth-card {
+    padding: 8px 2px 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-shell *,
+  .auth-shell *::before,
+  .auth-shell *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* ---------------------------------------------------------------- */
+/* Dark panel variant                                                 */
+/* ---------------------------------------------------------------- */
+html[data-theme='dark'] {
+  color-scheme: dark;
+}
+html[data-theme='light'] {
+  color-scheme: light;
+}
+
+html[data-theme='dark'] .auth-shell {
+  --auth-bg: #0a0a0a;
+  --auth-ink: #fcfcfa;
+  --auth-muted: #d9d9d9;
+  --auth-dim: #a6a6a6;
+  --auth-faint: #8c8c8c;
+  --auth-line: #333333;
+  --auth-line-soft: #1c1c1c;
+  --auth-line-strong: #595959;
+  --auth-field: #111111;
+  --auth-field-focus: #1c1c1c;
+  --auth-hover: #1c1c1c;
+  --auth-accent: #7fb39e;
+  --auth-aside-bg: #111111;
+  --auth-aside-glow: transparent;
+  --auth-aside-sheen: transparent;
+  --auth-card-top: #111111;
+  --auth-card-bottom: #111111;
+  --auth-card-shadow: none;
+  --auth-btn-bg: #fcfcfa;
+  --auth-btn-bg-hover: #7fb39e;
+  --auth-btn-ink: #0a0a0a;
+  --auth-spinner-track: rgba(10, 10, 10, 0.25);
+  --auth-spinner-head: #0a0a0a;
+  --auth-notice-ink: #a8d2c2;
+  --auth-notice-border: #34574b;
+  --auth-notice-bg: rgba(61, 102, 88, 0.18);
+  --auth-error-ink: #e08a80;
+  --auth-error-border: #6b2a22;
+  --auth-error-bg: rgba(180, 35, 24, 0.16);
+  --auth-danger-ink: #e08a80;
+  --auth-met: #7fb39e;
+}
+
+html[data-theme='dark'] .auth-input:focus {
+  box-shadow: 0 0 0 1px var(--auth-accent);
+}
+
+html[data-theme='dark'] .auth-demo-btn:hover:not(:disabled) {
+  background: rgba(61, 102, 88, 0.14);
+}
+
+/* Floating theme switch used on every pre-auth screen. */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: 0;
+  border: 1px solid var(--auth-line);
+  background: var(--auth-bg);
+  color: var(--auth-muted);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.theme-toggle:hover {
+  color: var(--auth-ink);
+  border-color: var(--auth-line-strong);
+  background: var(--auth-hover);
+}
+.auth-theme-toggle {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  z-index: 30;
+}
