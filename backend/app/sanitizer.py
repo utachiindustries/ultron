@@ -14,7 +14,7 @@ from typing import Tuple, Dict, Any
 JWT_PATTERN = re.compile(
     r"\b[A-Za-z0-9\-_]*[A-Za-z][A-Za-z0-9\-_]*\.[A-Za-z0-9\-_]*[A-Za-z][A-Za-z0-9\-_]*\.[A-Za-z0-9\-_]*[A-Za-z][A-Za-z0-9\-_]*\b"
 )
-API_KEY_PATTERN = re.compile(r"\b(sk|pk|wh|ghp|gho|xoxb|xoxp|xoxc)-[A-Za-z0-9]{12,}\b")
+API_KEY_PATTERN = re.compile(r"\b(sk|pk|wh|ghp|gho|xoxb|xoxp|xoxc)-[A-Za-z0-9]{4,}\b")
 IP_PATTERN = re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")
 CIDR_PATTERN = re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}/\d{1,2}\b")
 EMAIL_PATTERN = re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b")

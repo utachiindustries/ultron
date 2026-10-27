@@ -1,17 +1,18 @@
 from __future__ import annotations
 
-"""Compliance readiness mapping to Senegal's 2026 Cybersecurity Law.
+"""Compliance readiness mapping to Bill No. 25/2026.
 
-Maps findings to regulatory obligations under the new law establishing
-the National Cybersecurity Authority, National CERT, mandatory incident
-reporting, and local hosting requirements.
+The bill passed the National Assembly on 21 August 2026; promulgation is
+not confirmed. Maps findings to the obligations the bill sets out — the
+National Cybersecurity Authority, National CERT, incident notification,
+and local hosting requirements — as a draft mapping, not a legal opinion.
 """
 
 from typing import List, Dict, Any
 
 
 # Sector-specific operational guidance. These are deliberately separate from
-# LAW_ARTICLES below: the law mappings are legal obligations, while a sector
+# LAW_ARTICLES below: the bill mappings are legal obligations, while a sector
 # pack is the practical checklist an operator should walk through for that
 # kind of client. Kept as data so the console, reports, and API all read the
 # same source instead of drifting.
@@ -134,31 +135,31 @@ def _sports_sector_action(finding: Dict[str, Any]) -> str:
     )
 
 
-# Senegal Cyber Law 2026 - Article mappings
+# Bill No. 25/2026 - draft article mappings
 LAW_ARTICLES = {
     "incident_reporting": {
         "article": "Article 14 - Mandatory Incident Reporting",
-        "description": "Security incidents must be reported to the National CERT within 72 hours.",
+        "description": "The bill sets a 72-hour window for reporting security incidents to the National CERT; confirm the final text.",
         "severity_threshold": ["critical", "high"],
     },
     "vulnerability_reporting": {
         "article": "Article 16 - Vulnerability Disclosure",
-        "description": "Discovered vulnerabilities in critical infrastructure must be disclosed to the National Cybersecurity Authority.",
+        "description": "The bill sets disclosure duties for vulnerabilities in critical infrastructure; confirm the final text.",
         "severity_threshold": ["critical", "high", "medium"],
     },
     "local_hosting": {
         "article": "Article 22 - Local Hosting of Public-Sector Data",
-        "description": "Public-sector data must be hosted within Senegal or accredited sovereign infrastructure.",
+        "description": "The bill sets local-hosting requirements for public-sector data; confirm the final text.",
         "severity_threshold": ["critical"],
     },
     "security_audit": {
         "article": "Article 10 - Regular Security Audits",
-        "description": "Critical infrastructure operators must undergo annual security audits by accredited providers.",
+        "description": "The bill sets audit duties for critical-infrastructure operators; confirm the final text.",
         "severity_threshold": ["info"],
     },
     "ai_governance": {
         "article": "Article 30 - AI Governance Standards",
-        "description": "AI systems in high-risk sectors require documented governance and human oversight.",
+        "description": "The bill sets AI governance and human-oversight duties for high-risk sectors; confirm the final text.",
         "severity_threshold": ["medium"],
     },
 }
@@ -168,7 +169,7 @@ def map_findings_to_compliance(
     findings: List[Dict[str, Any]],
     client_sector: str | None = None,
 ) -> List[Dict[str, Any]]:
-    """Map scan findings to Senegal cyber law obligations.
+    """Map scan findings to the draft obligations in Bill No. 25/2026.
 
     For sectors with a pack (currently sports), each mapping also carries a
     ``sector_action`` written in that sector's operational language.
@@ -187,7 +188,7 @@ def map_findings_to_compliance(
                 "severity": severity,
                 "law_article": LAW_ARTICLES["incident_reporting"]["article"],
                 "obligation": LAW_ARTICLES["incident_reporting"]["description"],
-                "action_required": "Report to National CERT within 72 hours if this constitutes a security incident.",
+                "action_required": "If this constitutes a security incident, prepare a National CERT notification within the bill's 72-hour window; confirm the final text.",
                 "priority": "immediate" if severity == "critical" else "urgent",
             })
 
@@ -199,7 +200,7 @@ def map_findings_to_compliance(
                 "severity": severity,
                 "law_article": LAW_ARTICLES["vulnerability_reporting"]["article"],
                 "obligation": LAW_ARTICLES["vulnerability_reporting"]["description"],
-                "action_required": "Consider disclosure to National Cybersecurity Authority for critical infrastructure.",
+                "action_required": "Consider disclosure to the National Cybersecurity Authority for critical infrastructure; confirm the final text.",
                 "priority": "high",
             })
 
@@ -230,7 +231,7 @@ def map_findings_to_compliance(
             )
             mapping["sector_action"] = _sports_sector_action(finding)
 
-    # Deduplicate by law article (and sector action, when present, so a sports
+    # Deduplicate by bill article (and sector action, when present, so a sports
     # client keeps one actionable line per distinct operational risk).
     seen = set()
     unique_mappings = []
@@ -264,7 +265,8 @@ def get_compliance_summary(
         next_steps = sector_pack["next_steps"] + next_steps
 
     return {
-        "framework": "Senegal Cybersecurity Law 2026",
+        "framework": "Bill No. 25/2026 (passed 21 August 2026) — draft mapping",
+        "disclaimer": "Draft mapping against Bill No. 25/2026 as passed on 21 August 2026. Confirm article references and the notification window against the published text before relying on it. Not a legal opinion.",
         "client_sector": client_sector or "not_specified",
         "total_findings": total_findings,
         "critical": critical,

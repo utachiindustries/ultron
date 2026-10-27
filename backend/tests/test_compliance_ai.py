@@ -14,7 +14,8 @@ def test_compliance_summary_banking(client):
     )
     assert res.status_code == 200, res.text
     body = res.json()
-    assert body["framework"] == "Senegal Cybersecurity Law 2026"
+    assert body["framework"] == "Bill No. 25/2026 (passed 21 August 2026) — draft mapping"
+    assert "Draft mapping" in body["disclaimer"]
     assert body["reporting_required"] is True
     assert body["cert_notification_window_hours"] > 0
     assert body["next_steps"]
@@ -42,7 +43,7 @@ def test_sanitizer_removes_pii_and_secrets(client):
     res = client.post(
         "/sanitize",
         json={
-            "text": "Client Acme at IP 10.0.0.5 used key sk-1234567890abcdef and email a@b.com",
+            "text": "Client Acme at IP 10.0.0.5 used key sk-1234567890abcdef and email a@b.com; demo key sk-12345",
             "client_name": "Acme",
         },
     )
@@ -50,6 +51,7 @@ def test_sanitizer_removes_pii_and_secrets(client):
     sanitized = res.json()["sanitized"]
     assert "10.0.0.5" not in sanitized
     assert "sk-1234567890abcdef" not in sanitized
+    assert "sk-12345" not in sanitized
     assert "a@b.com" not in sanitized
 
 

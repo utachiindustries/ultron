@@ -3,7 +3,7 @@ from __future__ import annotations
 """Report generation for scan findings.
 
 Generates plain-language reports mapped to business impact and
-Senegal cyber law obligations.
+Bill No. 25/2026 obligations (draft mapping).
 """
 
 import json
@@ -194,8 +194,9 @@ def report_to_markdown(report: Dict[str, Any]) -> str:
             lines.append(f"- {step}")
         lines.append("")
 
-    lines.append("## Compliance (Senegal Cyber Law 2026)")
+    lines.append("## Compliance (Bill No. 25/2026 — draft mapping)")
     lines.append(f"- Framework: {report['compliance']['framework']}")
+    lines.append(f"- Disclaimer: {report['compliance'].get('disclaimer', 'Draft mapping; not a legal opinion.')}")
     lines.append(f"- CERT Notification Required: {report['compliance']['reporting_required']}")
     lines.append(f"- Notification Window: {report['compliance']['cert_notification_window_hours']} hours")
     lines.append(f"- Accreditation Recommended: {report['compliance']['accreditation_recommended']}")

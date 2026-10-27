@@ -1,4 +1,4 @@
-"""Senegal Cyber Law 2026 mapping."""
+"""Bill No. 25/2026 draft compliance mapping."""
 
 from fastapi import APIRouter, Depends
 from typing import Optional
