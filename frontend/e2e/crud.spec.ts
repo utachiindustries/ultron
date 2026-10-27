@@ -3,7 +3,7 @@ import { test, expect, type Page } from '@playwright/test'
 async function loginAsAdmin(page: Page) {
   await page.goto('/console')
   await page.getByRole('button', { name: 'Try as Admin' }).click()
-  await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible({ timeout: 10000 })
+  await expect(page.getByRole('heading', { name: 'Platform overview' })).toBeVisible({ timeout: 10000 })
 }
 
 test.describe.configure({ mode: 'serial' })
@@ -59,10 +59,10 @@ test('admin can create a new user from the Admin panel and sign in as them', asy
 
   await page.getByLabel('Email').fill(email)
   await page.getByLabel('Temporary password').fill('a-temp-password-1')
-  await page.getByLabel('Role').selectOption('analyst')
+  await page.getByRole('dialog').getByLabel('Role').selectOption('analyst')
   await page.getByRole('button', { name: 'Create user', exact: true }).click()
 
-  await expect(page.getByText(email)).toBeVisible({ timeout: 10000 })
+  await expect(page.getByText(email).first()).toBeVisible({ timeout: 10000 })
 
   // The new account can actually sign in with what we just set. A fresh,
   // isolated browser context -- not just a new tab -- since a new tab in
@@ -73,7 +73,7 @@ test('admin can create a new user from the Admin panel and sign in as them', asy
   await fresh.getByLabel('Email').fill(email)
   await fresh.getByLabel('Password', { exact: true }).fill('a-temp-password-1')
   await fresh.getByRole('button', { name: 'Sign in' }).click()
-  await expect(fresh.getByRole('heading', { name: 'Dashboard' })).toBeVisible({ timeout: 10000 })
+  await expect(fresh.getByRole('heading', { name: 'Operations overview' })).toBeVisible({ timeout: 10000 })
   await expect(fresh.getByRole('button', { name: 'Audit' })).toBeVisible()
   await expect(fresh.getByRole('button', { name: 'Admin' })).toHaveCount(0)
   await freshContext.close()

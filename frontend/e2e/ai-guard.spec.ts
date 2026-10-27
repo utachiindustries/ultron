@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test'
 async function loginAsAdmin(page: import('@playwright/test').Page) {
   await page.goto('/console')
   await page.getByRole('button', { name: 'Try as Admin' }).click()
-  await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible({ timeout: 10000 })
+  await expect(page.getByRole('heading', { name: 'Platform overview' })).toBeVisible({ timeout: 10000 })
   await page.getByRole('button', { name: 'AI Guard' }).click()
 }
 

@@ -9,7 +9,7 @@ test('a new visitor can sign up and lands in the console, signed in', async ({ p
   await page.getByLabel('Confirm password').fill('a-strong-password-1')
   await page.getByRole('button', { name: 'Create account' }).click()
 
-  await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible({ timeout: 10000 })
+  await expect(page.getByRole('heading', { name: 'Your security posture' })).toBeVisible({ timeout: 10000 })
   await expect(page.getByText(email)).toBeVisible()
 
   // A brand-new signup is always role "client" -- never a privileged role.

@@ -337,7 +337,7 @@ export default function LandingPage() {
           </nav>
 
           <div className="nav-actions">
-            <a href="/console" className="btn btn-login">Login</a>
+            <a href="/console" className="btn btn-login">Sign in</a>
           </div>
 
           <button
@@ -356,12 +356,12 @@ export default function LandingPage() {
             <a key={l.href} href={l.href}>{l.label}</a>
           ))}
           <div className="divider" />
-          <a href="/console">Login</a>
+          <a href="/console">Sign in</a>
         </nav>
 
         <div className="hero-inner">
           <h1 className="hero-h1">
-            <span className="ln"><span className="ln-i">Know before</span></span>
+            <span className="ln"><span className="ln-i">Know before{' '}</span></span>
             <span className="ln"><span className="ln-i">they do.</span></span>
           </h1>
           <p className="sub">

@@ -6,7 +6,7 @@ test('landing page header is decluttered: no Contact or Get Started in the nav',
   await expect(nav.getByRole('link', { name: 'Platform' })).toBeVisible()
   await expect(nav.getByRole('link', { name: 'Scanning' })).toBeVisible()
   await expect(nav.getByRole('link', { name: 'Sovereignty' })).toBeVisible()
-  await expect(nav.getByRole('link', { name: 'Login' })).toBeVisible()
+  await expect(nav.getByRole('link', { name: 'Sign in' })).toBeVisible()
   await expect(nav.getByRole('link', { name: 'Contact', exact: false })).toHaveCount(0)
   await expect(nav.getByRole('link', { name: 'Get Started', exact: false })).toHaveCount(0)
 
